@@ -9,11 +9,13 @@ if {[have_include power_on/qemu]} {
 
 set build_components {
 	core init
-	timer
 	drivers/audio
+	drivers/timer
 	server/report_rom
 	server/dynamic_rom
 	app/audio_player
+	app/cpu_burner
+	app/top
 }
 
 source ${genode_dir}/repos/base/run/platform_drv.inc
@@ -28,7 +30,7 @@ create_boot_directory
 #
 
 append config {
-<config>
+<config prio_levels="4">
 	<parent-provides>
 		<service name="ROM"/>
 		<service name="RAM"/>
@@ -41,6 +43,7 @@ append config {
 		<service name="CPU"/>
 		<service name="LOG"/>
 		<service name="SIGNAL" />
+		<service name="TRACE" />
 	</parent-provides>
 	<default-route>
 		<any-service> <parent/> <any-child/> </any-service>
@@ -58,7 +61,7 @@ append config {
 	<start name="report_rom">
 		<resource name="RAM" quantum="4M"/>
 		<provides> <service name="Report"/> <service name="ROM"/> </provides>
-		<config verbose="yes">
+		<config verbose="no">
 			<rom>
 				<policy label_prefix="" report="audio_player -> current_track"/>
 			</rom>
@@ -73,17 +76,9 @@ append config {
 				<inline description="initial playlist">
 <playlist>
 	<track path="foo.mp3"/>
-	<track path="foo.ogg"/>
-	<track path="foo.flac"/>
 </playlist>
 				</inline>
-				<sleep milliseconds="30000"/>
-				<inline description="initial playlist">
-<playlist>
-	<track path="foo.ogg"/>
-</playlist>
-				</inline>
-				<sleep milliseconds="30000"/>
+				<sleep milliseconds="200000"/>
 			</rom>
 			<rom name="audio_player.config">
 				<inline description="initial config">
@@ -92,39 +87,27 @@ append config {
 	<libc/>
 	<vfs>
 		<rom name="foo.mp3"/>
-		<rom name="foo.flac"/>
-		<rom name="foo.ogg"/>
 	</vfs>
 </config>
 				</inline>
-				<sleep milliseconds="10000"/>
-				<inline description="select third track">
-<config state="playing" playlist_mode="repeat" selected_track="3"/>
-				</inline>
-				<sleep milliseconds="5000"/>
-				<inline description="select first track">
-<config state="playing" playlist_mode="repeat" selected_track="1"/>
-				</inline>
-				<sleep milliseconds="5000"/>
-				<inline description="select second track">
-<config state="playing" playlist_mode="repeat" selected_track="2"/>
-				</inline>
-				<sleep milliseconds="5000"/>
+				<sleep milliseconds="200000"/>
 			</rom>
 		</config>
 	</start>
 
-	<start name="audio_drv">
+	<start name="audio_drv" priority="-2">
 		<binary name="} [audio_drv_binary] {"/>
 		<resource name="RAM" quantum="8M"/>
+		<resource name="CPU" quantum="10"/>
 		<provides> <service name="Audio_out"/> </provides>
 		<!--
 		<config alsa_device="hw:CARD=PCH,DEV=0"/>
 		-->
 	</start>
 
-	<start name="audio_player" caps="150">
+	<start name="audio_player" caps="150" priority="-2">
 		<resource name="RAM" quantum="24M"/>
+		<resource name="CPU" quantum="10"/>
 		<configfile name="audio_player.config"/>
 		<route>
 			<service name="ROM" label="audio_player.config"> <child name="dynamic_rom"/> </service>
@@ -132,6 +115,24 @@ append config {
 			<service name="Report"> <child name="report_rom"/> </service>
 			<any-service> <parent/> <any-child/> </any-service>
 		</route>
+	</start>
+
+	<start name="cpu_burner_no_quantum" priority="-1">
+		<binary name="cpu_burner"/>
+		<resource name="RAM" quantum="4M"/>
+		<config percent="100"/>
+	</start>
+
+	<start name="cpu_burner_quantum" priority="-1">
+		<binary name="cpu_burner"/>
+		<resource name="RAM" quantum="4M"/>
+		<resource name="CPU" quantum="10"/>
+		<config percent="100"/>
+	</start>
+
+	<start name="top">
+		<resource name="RAM" quantum="8M"/>
+		<config period_ms="10000"/>
 	</start>
 </config>}
 
@@ -141,10 +142,10 @@ install_config $config
 # Check audio files
 #
 
-if {[expr ![file exists bin/foo.flac] || ![file exists bin/foo.mp3] || ![file exists bin/foo.ogg]]} {
+if {[expr ![file exists bin/foo.mp3]]} { 
 	puts ""
 	puts "One or all audio files are missing. Please put 'foo.flac', 'foo.mp3' and"
-	puts "'foo.ogg' into './bin' and execute this run script again. Note, that the"
+	puts "'foo.mp3' into './bin' and execute this run script again. Note, that the"
 	puts "duration of each of those files has to be below 10 seconds for this run"
 	puts "script to work properly."
 	puts ""
@@ -159,9 +160,11 @@ append boot_modules {
 	core init timer dynamic_rom report_rom } [audio_drv_binary] {
 	ld.lib.so libc.lib.so vfs.lib.so libm.lib.so zlib.lib.so
 	avcodec.lib.so avformat.lib.so avutil.lib.so
-	avresample.lib.so pthread.lib.so
+	avresample.lib.so
 	audio_player
-	foo.mp3 foo.flac foo.ogg
+	cpu_burner
+	top
+	foo.mp3
 }
 
 append_platform_drv_boot_modules
