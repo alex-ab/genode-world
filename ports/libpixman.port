@@ -1,0 +1,11 @@
+LICENSE   := MIT
+VERSION   := 0.38.4
+DOWNLOADS := libpixman.archive
+
+URL(libpixman) := https://www.cairographics.org/releases/pixman-$(VERSION).tar.gz
+SHA(libpixman) := da66d6fd6e40aee70f7bd02e4f8f76fc3f006ec879d346bae6a723025cfbdde7
+DIR(libpixman) := src/lib/libpixman
+
+DIRS := include/libpixman
+DIR_CONTENT(include/libpixman) := src/lib/libpixman/pixman/pixman.h \
+                                  src/lib/libpixman/pixman/pixman-version.h
