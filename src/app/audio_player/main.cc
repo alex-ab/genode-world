@@ -33,7 +33,7 @@ extern "C" {
  * defined in <machine/_stdint.h> when used with C.
  */
 #ifndef UINT64_C
-#define UINT64_C(c) __UINT64_C(c)
+//#define UINT64_C(c) __UINT64_C(c)
 #endif
 
 #include <libavcodec/avcodec.h>
