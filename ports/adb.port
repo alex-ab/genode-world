@@ -1,0 +1,9 @@
+LICENSE   := Apache
+VERSION   := git
+DOWNLOADS := core.git
+
+URL(core) := https://android.googlesource.com/platform/system/core
+REV(core) := c3d30bfdfff894419a4386685bc711b07ab917de
+DIR(core) := src/app/android.core
+
+PATCHES   := src/app/adb/wip.patch

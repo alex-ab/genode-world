@@ -1,0 +1,57 @@
++++ src/app/android.core/adb/sysdeps.h
+@@ -491,7 +491,8 @@ static inline int adb_pread(borrowed_fd fd, void* buf, size_t len, off64_t offse
+ #if defined(__APPLE__)
+     return TEMP_FAILURE_RETRY(pread(fd.get(), buf, len, offset));
+ #else
+-    return TEMP_FAILURE_RETRY(pread64(fd.get(), buf, len, offset));
++    return TEMP_FAILURE_RETRY(pread(fd.get(), buf, len, offset));
++    //return TEMP_FAILURE_RETRY(pread64(fd.get(), buf, len, offset));
+ #endif
+ }
+ 
+@@ -513,7 +514,8 @@ static inline int adb_pwrite(int fd, const void* buf, size_t len, off64_t offset
+ #if defined(__APPLE__)
+     return TEMP_FAILURE_RETRY(pwrite(fd, buf, len, offset));
+ #else
+-    return TEMP_FAILURE_RETRY(pwrite64(fd, buf, len, offset));
++    return TEMP_FAILURE_RETRY(pwrite(fd, buf, len, offset));
++    //return TEMP_FAILURE_RETRY(pwrite64(fd, buf, len, offset));
+ #endif
+ }
+ 
+@@ -526,7 +528,8 @@ static inline int64_t adb_lseek(borrowed_fd fd, int64_t pos, int where) {
+ #if defined(__APPLE__)
+     return lseek(fd.get(), pos, where);
+ #else
+-    return lseek64(fd.get(), pos, where);
++    return lseek(fd.get(), pos, where);
++    //return lseek64(fd.get(), pos, where);
+ #endif
+ }
+ #undef lseek
+@@ -607,6 +610,8 @@ inline int adb_socket_get_local_port(borrowed_fd fd) {
+ #define unix_close adb_close
+ 
+ static inline int adb_thread_setname(const std::string& name) {
++    return 0;
++#if 0
+ #ifdef __APPLE__
+     return pthread_setname_np(name.c_str());
+ #else
+@@ -617,6 +622,7 @@ static inline int adb_thread_setname(const std::string& name) {
+     buf[sizeof(buf) - 1] = '\0';
+     return pthread_setname_np(pthread_self(), buf);
+ #endif
++#endif
+ }
+ 
+ static inline int adb_setsockopt(borrowed_fd fd, int level, int optname, const void* optval,
+@@ -679,7 +685,7 @@ static inline int cast_handle_to_int(int fd) {
+ class Process {
+   public:
+     constexpr explicit Process(pid_t pid) : pid_(pid) {}
+-    constexpr Process(Process&& other) : pid_(std::exchange(other.pid_, -1)) {}
++    Process(Process&& other) : pid_(std::exchange(other.pid_, -1)) {}
+ 
+     constexpr explicit operator bool() const { return pid_ >= 0; }
+ 
