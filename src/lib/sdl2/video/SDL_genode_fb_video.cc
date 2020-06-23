@@ -313,6 +313,8 @@ extern "C" {
 			.driverdata = nullptr
 		};
 
+		Genode::error("mode ", drv.scr_mode.area.w(), "x", drv.scr_mode.area.h());
+
 		SDL_VideoDisplay &display = device->displays[0];
 		if (!SDL_AddDisplayMode(&display, &mode))
 			return SDL_SetError("Setting display mode failed");
