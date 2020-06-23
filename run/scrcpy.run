@@ -452,7 +452,18 @@ append config {
 			<arg value="} $dst_port {"/>
 
 			<libc stdout="/dev/log" stderr="/dev/log" rtc="/dev/rtc" socket="/socket">
-				<pthread placement="all-cpus" />
+				<pthread placement="manual" verbose="yes">
+					<thread id="0" cpu="1"/> <!-- pthread.0 - sdl main -->
+					<thread id="1" cpu="0"/> <!-- pthread.1 - stream -->
+					<thread id="2" cpu="0"/> <!-- pthread.2 - controller -->
+					<thread id="3" cpu="0"/> <!-- pthread.3 - receiver -->
+					<thread id="4" cpu="2"/> <!-- pthread.4 - libav -->
+					<thread id="5" cpu="3"/> <!-- pthread.5 - libav -->
+					<thread id="6" cpu="2"/> <!-- pthread.6 - libav auto -->
+					<thread id="7" cpu="3"/> <!-- pthread.7 - libav auto -->
+					<thread id="8" cpu="2"/> <!-- pthread.8 - libav auto -->
+					<thread id="9" cpu="3"/> <!-- pthread.9 - fps on ctrl+i -->
+				</pthread>
 			</libc>
 			<vfs>
 				<dir name="dev">
