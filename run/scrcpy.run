@@ -32,6 +32,8 @@ set lx_ip_addr "10.0.2.55"
 set lx_gw_addr "10.0.2.1"
 
 set dst_ip "10.0.0.8"
+set dst_ip "192.168.2.105"
+set dst_ip "192.168.2.172"
 set dst_port "27184"
 
 proc socket_fs_plugin {} {
