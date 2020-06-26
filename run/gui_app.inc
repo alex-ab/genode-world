@@ -49,7 +49,7 @@ install_config {
 	<default caps="100"/>
 
 	<start name="drivers" caps="1000">
-		<resource name="RAM" quantum="32M" constrain_phys="yes"/>
+		<resource name="RAM" quantum="48M" constrain_phys="yes"/>
 		<binary name="init"/>
 		<route>
 			<service name="ROM" label="config"> <parent label="drivers.config"/> </service>
