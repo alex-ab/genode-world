@@ -73,7 +73,7 @@ install_config {
 			<capture/>
 
 			<domain name="pointer" layer="1" content="client" label="no" origin="pointer" />
-			<domain name="default" layer="2" content="client" label="no" hover="always"/>
+			<domain name="default" layer="2" content="client" label="no" hover="always" width="1024" height="768"/>
 
 			<policy label_prefix="pointer" domain="pointer"/>
 			<default-policy domain="default"/>
