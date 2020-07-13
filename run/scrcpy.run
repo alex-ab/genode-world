@@ -348,7 +348,7 @@ append config {
 			<report focus="yes" />
 			<domain name="pointer" layer="1" content="client" label="no" origin="pointer" />
 			<domain name="panel"   layer="2" content="client" label="no" focus="none" />
-			<domain name="client"  layer="3" content="client" label="no" focus="click"/>
+			<domain name="client"  layer="3" content="client" label="no" focus="click" width="1024" height="768"/>
 			<policy label_prefix="pointer"    domain="pointer"/>
 			<default-policy domain="client"/>
 		</config>
