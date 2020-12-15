@@ -1,0 +1,7 @@
+_/src/scrcpy
+_/src/libav
+_/src/libc
+_/src/sdl2
+_/src/vfs
+_/src/vfs_lwip
+_/src/zlib

@@ -1,0 +1,54 @@
+<runtime ram="128M" caps="350" binary="scrcpy">
+
+	<requires>
+		<nic/>
+		<gui/>
+		<timer/>
+	</requires>
+
+	<content>
+		<rom label="avcodec.lib.so"/>
+		<rom label="avformat.lib.so"/>
+		<rom label="avutil.lib.so"/>
+		<rom label="libc.lib.so"/>
+		<rom label="libm.lib.so"/>
+		<rom label="scrcpy"/>
+		<rom label="sdl2.lib.so"/>
+		<rom label="vfs.lib.so"/>
+		<rom label="vfs_lwip.lib.so"/>
+		<rom label="zlib.lib.so"/>
+	</content>
+
+		<config ld_verbose="yes">
+			<arg value="scrcpy"/>
+<!--			<arg value="MMrender-expired-frames"/> -->
+			<arg value="--server-remote"/>
+			<arg value="192.168.178.21"/>
+			<arg value="--server-port"/>
+			<arg value="27184"/>
+
+			<libc stdout="/dev/log" stderr="/dev/log" rtc="/dev/rtc" socket="/socket">
+				<pthread placement="manual" verbose="yes">
+					<thread id="0" cpu="1"/> <!-- pthread.0 - sdl main -->
+					<thread id="1" cpu="0"/> <!-- pthread.1 - stream -->
+					<thread id="2" cpu="0"/> <!-- pthread.2 - controller -->
+					<thread id="3" cpu="0"/> <!-- pthread.3 - receiver -->
+					<thread id="4" cpu="2"/> <!-- pthread.4 - libav -->
+					<thread id="5" cpu="3"/> <!-- pthread.5 - libav -->
+					<thread id="6" cpu="2"/> <!-- pthread.6 - libav auto -->
+					<thread id="7" cpu="3"/> <!-- pthread.7 - libav auto -->
+					<thread id="8" cpu="2"/> <!-- pthread.8 - libav auto -->
+					<thread id="9" cpu="3"/> <!-- pthread.9 - fps on ctrl+i -->
+				</pthread>
+			</libc>
+			<vfs>
+				<dir name="dev">
+					<log/> <null/>
+					<inline name="rtc">2020-06-18 15:25</inline>
+					<inline name="random">01234567890123456789</inline>
+				</dir>
+				<dir name="socket"> <lwip dhcp="yes"/> </dir>
+			</vfs>
+		</config>
+
+</runtime>
