@@ -13,7 +13,7 @@ if {[have_include power_on/qemu] && $use_i965} {
 set build_components {
 	core init
 	timer
-	drivers/input
+	drivers/ps2
 	drivers/framebuffer
 	drivers/gpu/intel
 	server/liquid_framebuffer
@@ -75,14 +75,16 @@ append_platform_drv_config
 
 append_if [expr ![have_board linux]] config {
 	<start name="fb_drv">
-		<resource name="RAM" quantum="10M"/>
+		<binary name="vesa_fb_drv"/>
+		<resource name="RAM" quantum="30M"/>
+		<config width="1024" height="768"/>
 		<route><any-service> <parent /> <any-child/> </any-service> </route>
 	</start>}
 
 append_if [have_board pc] config {
 	<start name="ps2_drv">
 		<resource name="RAM" quantum="2M"/>
-		<provides> <service name="Input"/> </provides>
+		<config/>
 	</start>
 	<alias name="input_drv" child="ps2_drv"/> }
 
@@ -93,11 +95,14 @@ append config {
 	</start>
 	<start name="nitpicker">
 		<resource name="RAM" quantum="1M"/>
-		<provides> <service name="Gui"/> <service name="Capture"/> </provides>
+		<provides> <service name="Gui"/> <service name="Capture"/> <service name="Event"/> </provides>
 		<config request_framebuffer="no">
 			<capture/>
+			<event/>
+
 			<domain name="pointer" layer="1" content="client" label="no" origin="pointer" />
 			<domain name="default" layer="2" content="client" label="no" focus="click" hover="always" />
+
 			<policy label_prefix="pointer" domain="pointer"/>
 			<default-policy                domain="default"/>
 		</config>
@@ -206,7 +211,7 @@ append_if $use_i965 boot_modules {
 append boot_modules $demo_modules
 
 lappend_if [have_board         linux]  boot_modules fb_sdl
-lappend_if [expr ![have_board  linux]] boot_modules fb_drv
+lappend_if [expr ![have_board  linux]] boot_modules vesa_fb_drv
 lappend_if [have_board            pc]  boot_modules ps2_drv
 
 append_platform_drv_boot_modules

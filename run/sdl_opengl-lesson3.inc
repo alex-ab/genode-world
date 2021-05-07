@@ -1,13 +1,15 @@
 set demo_component test/sdl_opengl/lesson3
 set demo_binary    sdl_opengl-lesson3
-set demo_ram_quota 32M
+set demo_ram_quota 48M
 set demo_caps      200
 
 set demo_config {
 <config ld_verbose="true">
-	<libc stdout="/dev/log" stderr="/dev/log"/>
+	<libc stdout="/dev/log" stderr="/dev/log" rtc="/dev/rtc"/>
 	<vfs>
-		<dir name="dev"> <log/> </dir>
+		<dir name="dev">
+			<log/> <inline name="rtc">2020-01-01 00:00</inline>
+		</dir>
 	</vfs>
 </config>}
 
