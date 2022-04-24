@@ -183,6 +183,16 @@ class Vcpu : public StaticReceiver<Vcpu>
 		Genode::Semaphore                   _block { 0 };
 		Genode::Semaphore                   _started { 0 };
 
+		Genode::Vm_connection::Exit_config & exit_config(bool vmx, bool svm)
+		{
+			if (vmx)
+				_exit_config.config_exit = Vcpu::exit_config_intel;
+			else if (svm)
+				_exit_config.config_exit = Vcpu::exit_config_amd;
+
+			return _exit_config;
+		}
+
 	public:
 
 		Vcpu(Genode::Entrypoint    & ep,
@@ -201,10 +211,8 @@ class Vcpu : public StaticReceiver<Vcpu>
 		:
 			_vm_con(vm_con),
 			_handler(ep, *this, &Vcpu::_handle_vm_exception),
-//			         vmx ? &Vcpu::exit_config_intel :
-//			         svm ? &Vcpu::exit_config_amd : nullptr),
 			_vmx(vmx), _svm(svm), _map_small(map_small), _rdtsc_exit(rdtsc),
-			_vm_vcpu(_vm_con, alloc, _handler, _exit_config),
+			_vm_vcpu(_vm_con, alloc, _handler, exit_config(vmx, svm)),
 			_guest_memory(guest_memory),
 			_motherboard(motherboard),
 			_vcpu(vcpu_mutex, unsynchronized_vcpu)
@@ -295,7 +303,7 @@ class Vcpu : public StaticReceiver<Vcpu>
 			});
 		}
 
-		void exit_config_intel(Genode::Vcpu_state &state, unsigned exit)
+		static bool exit_config_intel(Genode::Vcpu_state &state, unsigned exit)
 		{
 			CpuState dummy_state;
 			unsigned mtd = 0;
@@ -354,9 +362,11 @@ class Vcpu : public StaticReceiver<Vcpu>
 			}
 
 			Seoul::write_vcpu_state(dummy_state, mtd, state);
+
+			return true;
 		}
 
-		void exit_config_amd(Genode::Vcpu_state &state, unsigned exit)
+		static bool exit_config_amd(Genode::Vcpu_state &state, unsigned exit)
 		{
 			CpuState dummy_state;
 			unsigned mtd = 0;
@@ -398,6 +408,8 @@ class Vcpu : public StaticReceiver<Vcpu>
 			}
 
 			Seoul::write_vcpu_state(dummy_state, mtd, state);
+
+			return true;
 		}
 
 		/***********************************
