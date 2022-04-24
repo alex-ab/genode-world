@@ -19,6 +19,7 @@
 		<rom label="vfs.lib.so"/>
 		<rom label="vfs_import.lib.so"/>
 		<rom label="ld.lib.so"/>
+		<rom label="ld-nova.lib.so"/>
 		<rom label="vdi_block"/>
 		<rom label="block_ext4.vdi"/>
 		<rom label="seoul"/>
@@ -79,6 +80,9 @@
 			<binary name="seoul"/>
 			<resource name="RAM" quantum="1090M"/>
 			<route>
+				<service name="ROM" unscoped_label="ld.lib.so">
+					<parent label="ld-nova.lib.so"/>
+				</service>
 				<service name="ROM" label="platform_info">
 					<parent label="platform_info"/> </service>
 				<service name="ROM" label="config">

@@ -15,6 +15,8 @@
 		<rom label="vm_seoul.cfg"/>
 		<rom label="init"/>
 		<rom label="seoul"/>
+		<rom label="ld.lib.so"/>
+		<rom label="ld-nova.lib.so"/>
 	</content>
 
 	<config verbose="yes">
@@ -36,6 +38,9 @@
 			<binary name="seoul"/>
 			<resource name="RAM" quantum="1024M"/>
 			<route>
+				<service name="ROM" unscoped_label="ld.lib.so">
+					<parent label="ld-nova.lib.so"/>
+				</service>
 				<service name="ROM" label="platform_info">
 					<parent label="platform_info"/> </service>
 				<service name="ROM" label="config">
