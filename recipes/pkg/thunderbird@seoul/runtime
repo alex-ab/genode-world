@@ -1,0 +1,102 @@
+<runtime ram="1420M" caps="1150" binary="init">
+
+	<requires>
+		<file_system writeable="yes" label="home"/>
+		<nic/>
+		<rom label="platform_info"/>
+		<vm/>
+		<rtc/>
+		<timer/>
+		<gui/>
+		<report label="shape"/>
+	</requires>
+
+	<content>
+		<rom label="vm_seoul_boot_0.cfg"/>
+		<rom label="tc-thunderbird.raw"/>
+		<rom label="init"/>
+		<rom label="vfs_block"/>
+		<rom label="vfs.lib.so"/>
+		<rom label="vfs_import.lib.so"/>
+		<rom label="ld.lib.so"/>
+		<rom label="vdi_block"/>
+		<rom label="block_ext4.vdi"/>
+		<rom label="seoul"/>
+	</content>
+
+	<config verbose="yes">
+
+		<parent-provides>
+			<service name="ROM"/>
+			<service name="PD"/>
+			<service name="CPU"/>
+			<service name="LOG"/>
+			<service name="VM"/>
+			<service name="Gui"/>
+			<service name="Rtc"/>
+			<service name="Nic"/>
+			<service name="Timer"/>
+			<service name="Report"/>
+			<service name="File_system"/>
+		</parent-provides>
+
+		<start name="vfs_block" caps="240">
+			<resource name="RAM" quantum="270M" />
+			<provides><service name="Block"/></provides>
+			<config>
+				<vfs>
+					<ram/>
+					<import>
+						<rom name="tc-thunderbird.raw"/>
+					</import>
+				</vfs>
+				<default-policy file="/tc-thunderbird.raw" writeable="yes" block_size="512"/>
+			</config>
+			<route>
+				<any-service> <parent/> </any-service>
+			</route>
+		</start>
+
+		<start name="vdi_block" ram="8M" caps="100">
+			<resource name="RAM" quantum="8M" />
+			<provides> <service name="Block"/> </provides>
+			<config file="/block_ext4.vdi" writeable="yes">
+				<vfs>
+					<fs label="home" buffer_size="2M"/>
+					<import overwrite="no">
+						<rom name="block_ext4.vdi" binary="yes"/>
+					</import>
+				</vfs>
+			</config>
+			<route>
+				<service name="File_system" label="home">
+					<parent label="home"/> </service>
+				<any-service> <parent/> </any-service>
+			</route>
+		</start>
+
+		<start name="seoul" caps="720">
+			<binary name="seoul"/>
+			<resource name="RAM" quantum="1090M"/>
+			<route>
+				<service name="ROM" label="platform_info">
+					<parent label="platform_info"/> </service>
+				<service name="ROM" label="config">
+					<parent label="vm_seoul_boot_0.cfg"/> </service>
+				<service name="Block" label="disk0">
+					<child name="vfs_block"/> </service>
+				<service name="Block" label="disk1">
+					<child name="vdi_block"/> </service>
+				<service name="Report" label="shape">
+					<parent label="shape"/> </service>
+				<service name="Gui" label="fb1.0">
+				    <!-- XXX required for window/shape/pointer matching - does not work for other fbX.Y -->
+					<parent label=""/>
+				</service>
+				<any-service><parent/></any-service>
+			</route>
+		</start>
+
+	</config>
+
+</runtime>
