@@ -7,7 +7,7 @@
  */
 
 /*
- * Copyright (C) 2011-2019 Genode Labs GmbH
+ * Copyright (C) 2011-2022 Genode Labs GmbH
  * Copyright (C) 2012 Intel Corporation
  *
  * This file is distributed under the terms of the GNU General Public License
@@ -37,6 +37,7 @@
 #include <cpu/vcpu_state.h>
 
 /* os includes */
+#include <audio_out_session/connection.h>
 #include <nic_session/connection.h>
 #include <nic/packet_allocator.h>
 #include <rtc_session/connection.h>
@@ -759,6 +760,12 @@ class Machine : public StaticReceiver<Machine>
 		Seoul::Network        *_nic          { nullptr };
 		Rtc::Session          *_rtc          { nullptr };
 
+		Audio_out::Connection  _audio_left  { _env, "front left",  false, false };
+		Audio_out::Connection  _audio_right { _env, "front right", false, false };
+
+		Genode::Signal_handler<Machine> const audio_processed { _env.ep(), *this, &Machine::_audio_processed };
+		Genode::Signal_handler<Machine> const audio_packets   { _env.ep(), *this, &Machine::_audio_packets };
+
 		enum { MAX_CPUS = 8 };
 		Vcpu *                 _vcpus[MAX_CPUS] { nullptr };
 		Genode::Bit_array<64>  _vcpus_active { };
@@ -770,6 +777,134 @@ class Machine : public StaticReceiver<Machine>
 		Machine &operator = (Machine const &);
 
 	public:
+
+		void _audio_processed()
+		{
+			_audio_packets();
+		}
+
+		void _audio_packets()
+		{
+			MessageAudio msg(MessageAudio::Type::AUDIO_CONTINUE_TX);
+			_motherboard()->bus_audio.send(msg);
+		}
+
+		Audio_out::Packet * p_left   { nullptr };
+//		Audio_out::Packet * p_right  { nullptr };
+		unsigned            sample_offset { 0 };
+
+		bool receive(MessageAudio &msg)
+		{
+			if (msg.type == MessageAudio::Type::AUDIO_CONTINUE_TX)
+				return false;
+
+			switch (msg.type) {
+			case MessageAudio::Type::AUDIO_START:
+				_audio_left .start();
+				_audio_right.start();
+				return true;
+			case MessageAudio::Type::AUDIO_STOP:
+				_audio_left .stop();
+				_audio_right.stop();
+				return true;
+			case MessageAudio::Type::AUDIO_OUT:
+				/* below - restructure XXX */
+				break;
+			default:
+				Genode::warning("audio: unsupported type ", unsigned(msg.type));
+				return true;
+			}
+
+			while (true) {
+
+				if (!p_left && _audio_left.stream()->full()) {
+/*
+					_audio_left.stream()->reset();
+					_audio_right.stream()->reset();
+*/
+//					static unsigned cnt = 0;
+//					Genode::error("full ? ", cnt++, " just wait");
+					/* wait for next processed signal */
+					return true;
+				}
+
+#if 1
+				if (!p_left && !_audio_left.stream()->full())
+					p_left = _audio_left.stream()->alloc();
+#else
+				if (!p_left) {
+					p_left = _audio_left.stream()->get(_audio_left.stream()->pos() + 2);
+				}
+#endif
+
+				if (!p_left)
+					return true;
+
+				unsigned const pos         = _audio_left .stream()->packet_position(p_left);
+				Audio_out::Packet *p_right = _audio_right.stream()->get(pos);
+
+				enum { CHANNELS = 2 };
+
+				if (msg.consumed >= msg.size)
+					Logging::panic("audio corrupt consumed=%u msg.size=%u\n", msg.consumed, msg.size);
+
+				uintptr_t  data_ptr    = msg.data + msg.consumed;
+				auto const max_samples = Audio_out::PERIOD * CHANNELS;
+
+				#define USE_FLOAT
+
+#ifdef USE_FLOAT
+				auto const guest_sample_size = sizeof(float);
+#else
+				auto const guest_sample_size = sizeof(Genode::int16_t);
+#endif
+
+				unsigned samples = (((msg.size - msg.consumed) / guest_sample_size) > max_samples)
+				                 ? max_samples : ((msg.size - msg.consumed) / guest_sample_size);
+
+				if (samples > max_samples - sample_offset)
+					samples = max_samples - sample_offset;
+
+				for (unsigned i = 0; i < samples / CHANNELS; i++) {
+					unsigned sample_pos = sample_offset / CHANNELS + i;
+#ifdef USE_FLOAT
+					float f_left  = ((float *)data_ptr)[i*CHANNELS+0];
+					float f_right = ((float *)data_ptr)[i*CHANNELS+1];
+#else
+					float f_left  = float(((Genode::int16_t *)data_ptr)[i*CHANNELS+0]) / 32768.0f;
+					float f_right = float(((Genode::int16_t *)data_ptr)[i*CHANNELS+1]) / 32768.0f;
+#endif
+
+					if (f_left >  1.0f) f_left =  1.0f;
+					if (f_left < -1.0f) f_left = -1.0f;
+
+					if (f_right >  1.0f) f_right =  1.0f;
+					if (f_right < -1.0f) f_right = -1.0f;
+
+					p_left ->content()[sample_pos] = f_left;
+					p_right->content()[sample_pos] = f_right;
+				}
+
+				msg.consumed += samples * guest_sample_size;
+
+				if (sample_offset + samples != max_samples) {
+					sample_offset = (sample_offset + samples) % max_samples;
+					/* delay packet until we get enough data */
+					return true;
+				}
+
+				_audio_right.submit(p_right);
+				_audio_left .submit(p_left);
+
+				p_left = p_right = nullptr;
+				sample_offset = 0;
+
+				if (msg.consumed >= msg.size)
+					break;
+			}
+
+			return true;
+		}
 
 		/*********************************************
 		 ** Callbacks registered at the motherboard **
@@ -1151,6 +1286,11 @@ class Machine : public StaticReceiver<Machine>
 
 			_timeouts()->init();
 
+			_audio_left.progress_sigh(audio_processed); /* server processed one packet */
+//			_audio_left.alloc_sigh(audio_packets);     /* new room to alloc */
+//			_audio_right.progress_sigh(audio_packets);
+//			_audio_right.alloc_sigh(audio_packets);
+
 			/* register host operations, called back by the VMM */
 			_unsynchronized_motherboard.bus_hostop.add  (this, receive_static<MessageHostOp>);
 			_unsynchronized_motherboard.bus_timer.add   (this, receive_static<MessageTimer>);
@@ -1159,6 +1299,7 @@ class Machine : public StaticReceiver<Machine>
 			_unsynchronized_motherboard.bus_hwpcicfg.add(this, receive_static<MessageHwPciConfig>);
 			_unsynchronized_motherboard.bus_acpi.add    (this, receive_static<MessageAcpi>);
 			_unsynchronized_motherboard.bus_legacy.add  (this, receive_static<MessageLegacy>);
+			_unsynchronized_motherboard.bus_audio.add   (this, receive_static<MessageAudio>);
 		}
 
 

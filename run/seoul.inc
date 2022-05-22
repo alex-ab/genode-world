@@ -5,6 +5,7 @@
 # \author Alexander Boettcher
 # \date   2011-11-21
 
+set use_audio 1
 set use_fs_rump $use_block_vdi
 set use_drv_ahci [expr $use_block_vdi || $use_block_sata]
 set use_vfs_block [expr $use_block_ram || $use_genode_iso]
@@ -30,6 +31,10 @@ if {$use_fs_rump} {
 
 if {$use_part_block} {
 	import_from_depot [depot_user]/src/part_block
+}
+
+if {$use_audio} {
+	import_from_depot [depot_user]/src/bsd_audio_drv
 }
 
 #
@@ -165,6 +170,12 @@ if {$use_nic_session} {
 	}
 }
 
+if {$use_audio} {
+	puts $vm_cfg_fd {
+		<virtio_sound irq="15"/>
+	}
+}
+
 puts $vm_cfg_fd {
 	</machine>
 	<multiboot>}
@@ -259,6 +270,16 @@ append config {
 		</route>
 	</start>}
 
+append_if $use_audio config {
+	<start name="audio_drv">
+		<binary name="pci_audio_drv"/>
+		<resource name="RAM" quantum="8M"/>
+		<provides>
+			<service name="Audio_in"/>
+			<service name="Audio_out"/>
+		</provides>
+		<config/>
+	</start>}
 
 append_if $use_drv_ahci config {
 	<start name="ahci_drv" priority="-1">
@@ -661,3 +682,8 @@ build_boot_image $boot_modules
 
 # A copy of the config is placed in the run folder.
 exec rm -f bin/vm_seoul.cfg
+
+
+if {$use_audio} {
+	append qemu_args " -device ES1370 "
+}
