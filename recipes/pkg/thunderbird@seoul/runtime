@@ -1,8 +1,8 @@
 <runtime ram="1420M" caps="1150" binary="init">
 
 	<requires>
-		<nic/>
 		<file_system writeable="yes" label="home"/>
+		<nic/>
 		<rom label="platform_info"/>
 		<vm/>
 		<rtc/>
