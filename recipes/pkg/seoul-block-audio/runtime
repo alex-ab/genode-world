@@ -9,10 +9,11 @@
 		<vm/>
 		<timer/>
 		<report label="shape"/>
+		<audio_out/>
 	</requires>
 
 	<content>
-		<rom label="vm_seoul.cfg"/>
+		<rom label="vm_seoul_audio.cfg"/>
 		<rom label="init"/>
 		<rom label="seoul"/>
 	</content>
@@ -30,6 +31,7 @@
 			<service name="Timer"/>
 			<service name="Block"/>
 			<service name="Report"/>
+			<service name="Audio_out"/>
 		</parent-provides>
 
 		<start name="seoul" caps="920">
@@ -39,7 +41,7 @@
 				<service name="ROM" label="platform_info">
 					<parent label="platform_info"/> </service>
 				<service name="ROM" label="config">
-					<parent label="vm_seoul.cfg"/> </service>
+					<parent label="vm_seoul_audio.cfg"/> </service>
 				<service name="Report" label="shape">
 					<parent label="shape"/> </service>
 				<service name="Gui" label="fb1.0">
