@@ -85,7 +85,7 @@ if {[have_spec foc]} {
 }
 
 set build_components {
-	drivers/framebuffer
+	drivers/framebuffer/vesa
 	drivers/rtc
 	app/seoul
 }
