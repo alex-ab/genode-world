@@ -59,7 +59,11 @@ MIRROR_FROM_LIBC := $(addprefix src/lib/libc/lib/libc/,$(SRC_C)) \
 
 MIRROR_FROM_OS := include/pointer/shape_report.h
 
-content: $(MIRROR_FROM_LIBC) $(MIRROR_FROM_OS)
+MIRROR_FROM_NOVA := include/nova/syscall-generic.h \
+                    include/spec/64bit/nova/syscalls.h \
+                    include/nova/stdint.h
+
+content: $(MIRROR_FROM_LIBC) $(MIRROR_FROM_OS) $(MIRROR_FROM_NOVA)
 
 $(MIRROR_FROM_OS):
 	mkdir -p $(dir $@)
@@ -68,3 +72,7 @@ $(MIRROR_FROM_OS):
 $(MIRROR_FROM_LIBC):
 	mkdir -p $(dir $@)
 	cp -r $(PORT_DIR)/$@ $(dir $@)
+
+$(MIRROR_FROM_NOVA):
+	mkdir -p $(dir $@)
+	cp -r $(GENODE_DIR)/repos/base-nova/$@ $(dir $@)

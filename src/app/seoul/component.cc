@@ -63,6 +63,8 @@
 #include "gui.h"
 #include "audio.h"
 
+#include <nova/syscalls.h>
+#include <nova/syscall-generic.h>
 
 enum { verbose_debug = false };
 enum { verbose_npt   = false };
@@ -221,7 +223,23 @@ class Vcpu : public StaticReceiver<Vcpu>
 		void block() { _block.down(); }
 		void unblock() { _block.up(); }
 
-		void recall() { _handler.local_submit(); }
+		void recall() {
+//			_handler.local_submit();
+			recall_nova();
+		}
+
+		mword _sm_sel() const { return Nova::NUM_INITIAL_PT_RESERVED +
+		                               _seoul_state.head.cpuid * 4; }
+
+		mword _ec_sel() const { return _sm_sel() + 1; }
+
+		void recall_nova()
+		{
+			auto res = Nova::ec_ctrl(Nova::EC_RECALL, _ec_sel());
+			if (res != Nova::NOVA_OK)
+				Genode::error("res=", res, " cpuid=", _seoul_state.head.cpuid,
+				              " _ec_sel=", _ec_sel());
+		}
 
 		void _handle_vm_exception()
 		{
