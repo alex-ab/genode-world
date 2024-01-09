@@ -374,16 +374,19 @@ bool Seoul::Console::receive(MessageConsole &msg)
 				gui.refresh(msg.x, msg.y, msg.width, msg.height);
 			}
 			else if (msg.view == 1) {
-				int x = 0, y = 0;
+				int hot_x = 0, hot_y = 0;
 
 				/* makes mouse (somewhat) visible if solely relative input is used */
 				if (_relative && !_absolute) {
-					x = gui.last_host_pos.x() - msg.x;
-					y = gui.last_host_pos.y() - msg.y;
+					hot_x = gui.last_host_pos.x() - msg.x;
+					hot_y = gui.last_host_pos.y() - msg.y;
+				} else {
+					hot_x = msg.hot_x;
+					hot_y = msg.hot_y;
 				}
 
 				gui.mouse_shape(true /* XXX */,
-				                x, y,
+				                hot_x, hot_y,
 				                msg.width, msg.height);
 			} else
 				return false;
