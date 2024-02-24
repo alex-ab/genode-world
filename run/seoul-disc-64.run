@@ -12,11 +12,13 @@ set use_genode_iso    0
 set use_model_ahci    1
 set use_model_ide     0
 
-set use_block_vdi     0
+set use_block_vdi     1
 set use_block_ram     0
 set use_block_sata    1
 
-set use_part_block    0
+set use_part_block    1
+
+set partition_rump    5
 
 set use_nic_session   1
 
@@ -26,9 +28,13 @@ set memory_vmm_vm     "6144M"
 
 set vcpus_to_be_used  2
 
-set use_virtio        0
+set use_virtio        1
 
 set cpuid_native      "yes"
+
+set vdi_name          "vm/tc_template/tc14.vdi"
+
+set use_audio 1
 
 if {[have_include power_on/qemu]} {
 	set uri   "http://depot.genode.org/alex-ab/images"
