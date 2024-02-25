@@ -260,6 +260,7 @@ if {[have_spec foc]} {
 set build_components {
 	drivers/rtc
 	app/seoul
+	server/record_play_mixer
 }
 
 lappend_if $use_block_vdi       build_components server/vdi_block
@@ -513,6 +514,24 @@ append_if $use_usb config {
 	</start>}
 
 append_if $use_audio config {
+	<start name="mixer" priority="-1">
+		<resource name="RAM" quantum="2M"/>
+		<binary name="record_play_mixer"/>
+		<provides> <service name="Record"/> <service name="Play"/> </provides>
+		<config jitter_ms="10">
+
+			<mix name="left">  <play label_suffix="left" /> </mix>
+			<mix name="right"> <play label_suffix="right"/> </mix>
+
+			<policy label_suffix="left"   record="left"  volume="1.0"/>
+			<policy label_suffix="right"  record="right" volume="1.0"/>
+		</config>
+		<route>
+			<service name="Report"> <child name="report_rom"/> </service>
+			<any-service><parent/><any-child/></any-service>
+		</route>
+	</start>
+
 	<start name="audio_drv">
 		<binary name="pci_audio_drv"/>
 		<resource name="RAM" quantum="8M"/>
@@ -520,7 +539,11 @@ append_if $use_audio config {
 			<service name="Audio_in"/>
 			<service name="Audio_out"/>
 		</provides>
-		<config/>
+		<config report_mixer="yes" record_play="yes"/>
+		<route>
+			<service name="Report"> <child name="report_rom"/> </service>
+			<any-service><parent/><any-child/></any-service>
+		</route>
 	</start>}
 
 append config {

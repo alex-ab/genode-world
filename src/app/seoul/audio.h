@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (C) 2022 Genode Labs GmbH
+ * Copyright (C) 2022-2024 Genode Labs GmbH
  *
  * This file is distributed under the terms of the GNU General Public License
  * version 2.
@@ -17,7 +17,8 @@
 #ifndef _AUDIO_H_
 #define _AUDIO_H_
 
-#include <audio_out_session/connection.h>
+#include <play_session/connection.h>
+#include <timer_session/connection.h>
 
 #include "synced_motherboard.h"
 
@@ -36,21 +37,34 @@ class Seoul::Audio
 		Synced_motherboard   &_motherboard;
 		Motherboard          &_unsynchronized_motherboard;
 
-		Audio_out::Connection  _audio_left;
-		Audio_out::Connection  _audio_right;
 
-		Audio_out::Packet * p_left   { nullptr };
-		unsigned            sample_offset { 0 };
+		static unsigned const _period_us         = 11'600u,
+		                      _sample_rate_hz    = 44'100u,
+		                      _frames_per_period = (_period_us * _sample_rate_hz)
+		                                         / 1'000'000;
 
-		struct Pkg {
-			unsigned value    { ~0U };
-			bool valid()      { return value != ~0U; }
-			void invalidate() { value = ~0U; }
-			void advance()    { value = (value + 1) % Audio_out::QUEUE_SIZE; }
-		};
+/*
+		static unsigned const _sample_rate_hz    = 44'100u,
+		                      _frames_per_period = 512, //1102,
+		                      _period_us         = _frames_per_period * 1'000'0000
+		                                         / _sample_rate_hz;
+*/
 
-		Pkg _pkg_head { };
-		Pkg _pkg_tail { };
+		Play::Connection  _left;
+		Play::Connection  _right;
+		Play::Time_window _time_window { };
+
+		Timer::Connection _timer;
+
+		enum { CHANNELS = 2 };
+
+		unsigned const max_samples = _frames_per_period * CHANNELS;
+		unsigned       sample_offset { 0 };
+
+		unsigned _data_id = 1;
+
+		float _left_data [_frames_per_period] { };
+		float _right_data[_frames_per_period] { };
 
 		bool _audio_running { false };
 		bool _audio_verbose { false };
@@ -66,15 +80,6 @@ class Seoul::Audio
 				Genode::log(__func__);
 
 			_audio_running = true;
-
-			_pkg_head.invalidate();
-			_pkg_tail.invalidate();
-
-			_audio_left.stream()->reset();
-			_audio_right.stream()->reset();
-
-			_audio_left .start();
-			_audio_right.start();
 		}
 
 		void _audio_stop()
@@ -85,16 +90,9 @@ class Seoul::Audio
 			if (_audio_verbose)
 				Genode::log(__func__);
 
-			_audio_left .stop();
-			_audio_right.stop();
-
 			_audio_running = false;
 
-			p_left = nullptr;
 			sample_offset = 0;
-
-			_audio_left .stream()->invalidate_all();
-			_audio_right.stream()->invalidate_all();
 		}
 
 		/*

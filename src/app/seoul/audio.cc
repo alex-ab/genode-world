@@ -24,11 +24,12 @@ Seoul::Audio::Audio(Genode::Env &env, Synced_motherboard &motherboard,
 	_sigh_processed(env.ep(), *this, &Audio::_audio_out),
 	_motherboard(motherboard),
 	_unsynchronized_motherboard(unsynch_motherboard),
-	_audio_left (env, "front left",  false, false),
-	_audio_right(env, "front right", false, false)
+	_left (env, "left" ),
+	_right(env, "right"),
+	_timer(env)
 {
-	/* server processed one packet */
-	_audio_left.progress_sigh(_sigh_processed);
+	_timer.sigh(_sigh_processed);
+//	_timer.trigger_periodic(_period_us);
 }
 
 
@@ -36,41 +37,32 @@ void Seoul::Audio::_audio_out()
 {
 	Genode::Mutex::Guard guard(_mutex);
 
-	if (!_pkg_head.valid())
+	if (sample_offset < max_samples) {
+		Genode::log(_data_id, " ", sample_offset, "/", max_samples);
 		return;
+	}
 
-	do {
-		Audio_out::Packet *pkg = _audio_left.stream()->get(_pkg_head.value);
-		if (!pkg || !pkg->played())
-			break;
+#if 0
+	_time_window = _left.schedule_and_enqueue(_time_window, { _period_us }, [&] (auto &submit) {
+		for (auto const data : _left_data)  { submit(data); }
+	});
 
-		MessageAudio msg(MessageAudio::Type::AUDIO_CONTINUE_TX, _pkg_head.value);
+	_right.enqueue(_time_window, [&] (auto &submit) {
+		for (auto const data : _right_data) { submit(data); }
+	});
+#endif
 
-		VMM_MEMORY_BARRIER;
+	MessageAudio msg(MessageAudio::Type::AUDIO_CONTINUE_TX, _data_id);
 
-		_mutex.release();
+	sample_offset = 0;
+	_data_id ++;
 
-		_motherboard()->bus_audio.send(msg);
+	_mutex.release();
 
-		_mutex.acquire();
+	_motherboard()->bus_audio.send(msg);
 
-		VMM_MEMORY_BARRIER;
-
-		if (msg.type == MessageAudio::Type::AUDIO_DRAIN_TX) {
-			/* already drained, we just stop and invalidate */
-			_audio_stop();
-			_pkg_head.invalidate();
-			return;
-		}
-
-		if (_pkg_head.value == _pkg_tail.value) {
-			_pkg_head.invalidate();
-			break;
-		} else
-			_pkg_head.advance();
-	} while (true);
+	_mutex.acquire();
 }
-
 
 bool Seoul::Audio::receive(MessageAudio &msg)
 {
@@ -93,7 +85,12 @@ bool Seoul::Audio::receive(MessageAudio &msg)
 		return true;
 	}
 
-	/* MessageAudio::Type::AUDIO_OUT */
+	/* case MessageAudio::Type::AUDIO_OUT */
+
+	if (sample_offset >= max_samples) {
+		msg.id = _data_id;
+		return true;
+	}
 
 	_audio_start();
 
@@ -101,74 +98,32 @@ bool Seoul::Audio::receive(MessageAudio &msg)
 		Logging::panic("audio corrupt consumed=%u msg.size=%u entry\n",
 		               msg.consumed, msg.size);
 
-	while (true) {
+	{
 
-		#define USE_FLOAT
-
-#ifdef USE_FLOAT
 		unsigned const guest_sample_size = sizeof(float);
-#else
-		unsigned const guest_sample_size = sizeof(Genode::int16_t);
-#endif
-
-		enum { CHANNELS = 2 };
 
 		if (msg.consumed >= msg.size)
 			Logging::panic("audio corrupt consumed=%u msg.size=%u loop\n",
 			               msg.consumed, msg.size);
 
-		if (!p_left && _audio_left.stream()->full()) {
-			/* under run case */
-			Genode::log("reset/drain - stream full ?!");
-
-			_audio_stop();
-			_pkg_head.invalidate();
-
-			msg.type = MessageAudio::Type::AUDIO_DRAIN_TX;
-			return true;
-		}
-
-		if (!p_left) {
-			try {
-				p_left = _audio_left.stream()->alloc();
-			} catch (...) {
-				if (_audio_verbose)
-					Genode::log("audio - allocation exception");
-				return true;
-			}
-		}
-
-		if (!p_left) {
-			if (_audio_verbose)
-				Genode::log("audio - no packet, should not happen");
-			return true;
-		}
-
 		uintptr_t const data_ptr = msg.data + msg.consumed;
 
-		auto const max_samples = Audio_out::PERIOD * CHANNELS;
 		unsigned samples = (((msg.size - msg.consumed) / guest_sample_size) > max_samples)
 		                 ? max_samples : ((msg.size - msg.consumed) / guest_sample_size);
 
 		if (samples > max_samples - sample_offset)
 			samples = max_samples - sample_offset;
 
-		unsigned const pos         = _audio_left .stream()->packet_position(p_left);
-		Audio_out::Packet *p_right = _audio_right.stream()->get(pos);
-
 		if (msg.consumed >= msg.size)
 			Logging::panic("audio corrupt consumed=%u msg.size=%u\n",
 			               msg.consumed, msg.size);
 
 		for (unsigned i = 0; i < samples / CHANNELS; i++) {
-			unsigned sample_pos = sample_offset / CHANNELS + i;
-#ifdef USE_FLOAT
+			unsigned const sample_pos = sample_offset / CHANNELS + i;
+
 			float f_left  = ((float *)data_ptr)[i*CHANNELS+0];
 			float f_right = ((float *)data_ptr)[i*CHANNELS+1];
-#else
-			float f_left  = float(((Genode::int16_t *)data_ptr)[i*CHANNELS+0]) / 32768.0f;
-			float f_right = float(((Genode::int16_t *)data_ptr)[i*CHANNELS+1]) / 32768.0f;
-#endif
+
 
 			if (f_left >  1.0f) f_left =  1.0f;
 			if (f_left < -1.0f) f_left = -1.0f;
@@ -176,32 +131,26 @@ bool Seoul::Audio::receive(MessageAudio &msg)
 			if (f_right >  1.0f) f_right =  1.0f;
 			if (f_right < -1.0f) f_right = -1.0f;
 
-			p_left ->content()[sample_pos] = f_left;
-			p_right->content()[sample_pos] = f_right;
+			_left_data [sample_pos] = f_left;
+			_right_data[sample_pos] = f_right;
 		}
 
 		msg.consumed += samples * guest_sample_size;
+		msg.id        = _data_id;
 
-		msg.id = _audio_left.stream()->packet_position(p_left);
-		_pkg_tail.value = msg.id;
+		sample_offset += samples;
 
-		if (!_pkg_head.valid())
-			_pkg_head = _pkg_tail;
+		if (sample_offset >= max_samples) {
+			_time_window = _left.schedule_and_enqueue(_time_window, { _period_us }, [&] (auto &submit) {
+				for (auto const data : _left_data)  { submit(data); }
+			});
 
-		if ((sample_offset + samples) != max_samples) {
-			sample_offset = (sample_offset + samples) % max_samples;
-			/* delay packet until we get enough data */
-			return true;
+			_right.enqueue(_time_window, [&] (auto &submit) {
+				for (auto const data : _right_data) { submit(data); }
+			});
+
+			_timer.trigger_once(_period_us);
 		}
-
-		_audio_right.submit(p_right);
-		_audio_left .submit(p_left);
-
-		p_left = p_right = nullptr;
-		sample_offset = 0;
-
-		if (msg.consumed >= msg.size)
-			break;
 	}
 
 	return true;
