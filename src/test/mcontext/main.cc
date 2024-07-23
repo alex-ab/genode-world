@@ -25,7 +25,9 @@ extern "C" {
 #include <unistd.h>
 #include <ucontext.h>
 }
+
 #if 0
+
 #define AARCH64
 #include <stddef.h>
 ucontext_t a;
@@ -72,33 +74,35 @@ int main(int argc, char **argv)
 #define mcontext(member) ucontext(uc_mcontext.mc_gpregs.member)
 
 #define oX0 mcontext(gp_x)
-	printf("%d\n", oX0); // oX0
+	printf("%lx\n", oX0); // oX0
 
 #define oPC mcontext(gp_lr)
-	printf("%d\n", oPC); // oPC
+	printf("%lx\n", oPC); // oPC
 
 #define oSP mcontext(gp_sp)
-	printf("%d\n", oSP); // oSP
+	printf("%lx\n", oSP); // oSP
 
 #define oPSTATE mcontext(gp_spsr)
-	printf("%d\n", oPSTATE); // oPSTATE
+	printf("%lx\n", oPSTATE); // oPSTATE
 
 #define oEXTENSION ucontext(uc_mcontext.mc_fpregs.fp_q)
-	printf("%d\n", oEXTENSION); // oEXTENSION emulation, or !!! need to add 1 page to ucontext!
+	printf("%lx\n", oEXTENSION); // oEXTENSION emulation, or !!! need to add 1 page to ucontext!
 
 #define fpsimd_context(member) ucontext(uc_mcontext.mc_fpregs.member)
 
 #define oFPSR fpsimd_context(fp_sr)
-	printf("%d\n", oFPSR);		// oFPSR
+	printf("%lx\n", oFPSR);		// oFPSR
 
 #define oFPCR fpsimd_context(fp_cr)
-	printf("%d\n", oFPCR);		// oFPCR
+	printf("%lx\n", oFPCR);		// oFPCR
 
 #endif
 
 	return 0;
 }
+
 #else
+
 #define MEM 64000
 ucontext_t T1, T2, Main, a;
 
@@ -119,42 +123,60 @@ void start()
 {
 	getcontext(&a);
 	a.uc_link = 0;
-	a.uc_stack.ss_sp = alloc_secondary_stack("test",MEM);
+	a.uc_stack.ss_sp = alloc_secondary_stack("test", MEM);
 	a.uc_stack.ss_size = MEM;
 	a.uc_stack.ss_flags = 0;
 	makecontext(&a, &fn1, 0);
 }
 
-int main(int argc, char **argv)
+int main(int, char **)
 {
 	printf("--- mcontext test ---\n");
 	printf("start... ucontext_t size: %ld\n", sizeof(a.uc_mcontext));
+
+	#ifdef __x86_64__
+	auto const ip = a.uc_mcontext.mc_rip;
+
 	a.uc_mcontext.mc_len =
 		T1.uc_mcontext.mc_len =
 			T2.uc_mcontext.mc_len =
 				Main.uc_mcontext.mc_len = sizeof(a.uc_mcontext);
+	#else
+	auto const ip = a.uc_mcontext.mc_gpregs.gp_lr; // aarch64
+	#endif
+
 	start();
-	printf("context prepared for func: %p\n",
-		//    a.uc_mcontext.mc_gpregs.gp_lr); // aarch64
-										       a.uc_mcontext.mc_rip);
+
+	printf("context prepared for func: %lx\n", ip);
+
 	getcontext(&Main);
 	getcontext(&T1);
 	T1.uc_link = 0;
 	T1.uc_stack.ss_sp = alloc_secondary_stack("test",MEM);
 	T1.uc_stack.ss_size = MEM;
 	T1.uc_stack.ss_flags = 0;
+
 	makecontext(&T1, &fn1, 0);
+
 	printf("swapcontext stacks: %p to %p\n", Main.uc_stack.ss_sp, T1.uc_stack.ss_sp);
+
 	swapcontext(&Main, &T1);
+
 	printf("swapcontext done\n");
+
 	getcontext(&T2);
+
 	T2.uc_link = 0;
 	T2.uc_stack.ss_sp = alloc_secondary_stack("test",MEM);
 	T2.uc_stack.ss_size = MEM;
 	T2.uc_stack.ss_flags = 0;
+
 	makecontext(&T2, &fn2, 0);
+
 	swapcontext(&Main, &T2);
+
 	printf("completed\n");
+
 	exit(0);
 }
 #endif
