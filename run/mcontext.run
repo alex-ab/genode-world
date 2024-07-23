@@ -1,9 +1,13 @@
-build "core init timer test/mcontext"
+build {
+	core init timer
+	lib/ld lib/libc lib/posix lib/vfs lib/libm
+	test/mcontext
+}
 
 create_boot_directory
 
 install_config {
-<config>
+<config prio_levels="2">
 	<parent-provides>
 		<service name="ROM"/>
 		<service name="IRQ"/>
@@ -14,15 +18,19 @@ install_config {
 		<service name="CPU"/>
 		<service name="LOG"/>
 	</parent-provides>
+
 	<default-route>
 		<any-service> <parent/> <any-child/> </any-service>
 	</default-route>
+
 	<default caps="200"/>
+
 	<start name="timer">
 		<resource name="RAM" quantum="1M"/>
 		<provides> <service name="Timer"/> </provides>
 	</start>
-	<start name="test-mcontext">
+
+	<start name="test-mcontext" priority="-1">
 		<resource name="RAM" quantum="400M"/>
 		<config verbose="yes" ld_verbose="yes" >
 			<vfs> <dir name="dev"> <log/>
@@ -33,10 +41,7 @@ install_config {
 </config>
 }
 
-build_boot_image {
-	core init timer test-mcontext
-	ld.lib.so libc.lib.so vfs.lib.so libm.lib.so posix.lib.so
-}
+build_boot_image [build_artifacts]
 
 append qemu_args " -nographic  "
 
