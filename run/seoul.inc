@@ -370,6 +370,7 @@ if {$use_virtio} {
 	puts $vm_cfg_fd {
 		<virtio_input mem="0xe0200000"/>
 		<virtio_gpu   mem="0xe0400000"/>
+		<virtio_fs    mem="0xe0500000"/>
 	}
 }
 
