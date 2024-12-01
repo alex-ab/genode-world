@@ -240,6 +240,36 @@ proc config_part_block { } {
 	return $config_part_block
 }
 
+proc config_ram_fs { } {
+
+	set config_ram_fs {
+	<start name="ram_fs" ram="38M">
+		<binary name="vfs"/>
+		<provides> <service name="File_system"/> </provides>
+		<config>
+			<vfs>
+				<ram/>
+				<import>
+					<dir name="testerA"/>
+					<dir name="runtime">
+						<inline name="state"><empty/></inline>
+						<dir name="nic_router"> <inline name="state">    <empty/></inline> </dir>
+						<dir name="update">     <inline name="state">    <empty/></inline> </dir>
+						<dir name="depot_query"><inline name="blueprint"><empty/></inline> </dir>
+					</dir>
+				</import>
+			</vfs>
+			<policy label="seoul -> /" root="/" writeable="yes" />
+		</config>
+		<route>
+			<any-service> <parent/> </any-service>
+		</route>
+	</start>
+	}
+
+	return $config_ram_fs
+}
+
 #
 # Build
 #
@@ -362,6 +392,7 @@ if {$use_virtio} {
 	puts $vm_cfg_fd {
 		<virtio_input mem="0xe0200000"/>
 		<virtio_gpu   mem="0xe0400000"/>
+		<virtio_fs    mem="0xe0500000"/>
 	}
 }
 
@@ -548,7 +579,8 @@ append_if $use_audio config {
 append config {
 	} [config_ahci] {
 	} [config_nvme] {
-	} [config_part_block] { }
+	} [config_part_block] {
+	} [config_ram_fs] { }
 
 append_if [expr $use_vfs_block && $use_block_ram] config {
 	<start name="vfs_block" priority="-2" caps="400" ram="300M">
@@ -718,6 +750,7 @@ append config {
 			<service name="Usb"> <child name="usb"/> </service>
 			<service name="Report" label="shape"> <child name="wm"/> </service>
 			<service name="Report"> <child name="report_rom"/> </service>
+			<service name="File_system"><child name="ram_fs"/></service>
 			<any-service><parent/><any-child/></any-service>
 		</route>
 	</start>
