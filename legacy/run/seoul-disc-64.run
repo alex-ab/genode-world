@@ -55,6 +55,13 @@ if {[have_include power_on/qemu] || [expr $use_block_ram]} {
 #	append qemu_args " -cpu EPYC"
 	append qemu_args " -accel kvm -cpu host"
 	append qemu_args " -smp $vcpus_to_be_used"
+
+#	append qemu_args " -chardev socket,id=char0,path=/tmp/vhostqemu"
+#	append qemu_args " -device vhost-user-fs-pci,queue-size=1024,chardev=char0,tag=myfs"
+#
+#	sudo /usr/libexec/virtiofsd --socket-path=/tmp/vhostqemu --shared-dir=/home/alex/genode/sculpt/tmp
+#	sudo chgrp alex /tmp/vhostqemu*
+#	sudo chmod g+rwx /tmp/vhostqemu
 }
 
 source ${genode_dir}/repos/world/run/seoul.inc
