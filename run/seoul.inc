@@ -36,7 +36,7 @@ import_from_depot [depot_user]/src/[base_src] \
                   [depot_user]/raw/drivers_interactive-pc \
                   [depot_user]/pkg/themed_wm \
                   [depot_user]/src/report_rom \
-                  [depot_user]/src/platform \
+                  [depot_user]/src/pc_platform \
                   [depot_user]/src/acpi \
                   [depot_user]/src/pci_decode \
                   [depot_user]/src/vesa_fb \
@@ -458,6 +458,7 @@ set config {
 	</start>
 
 	<start name="platform" caps="400" managing_system="yes" priority="-2">
+		<binary name="pc_platform"/>
 		<resource name="RAM" quantum="6M"/>
 		<provides>
 			<service name="Platform"/>
