@@ -26,7 +26,7 @@ set memory_vmm_vm     "6144M"
 
 set vcpus_to_be_used  2
 
-set use_virtio        0
+set use_virtio        1
 
 set cpuid_native      "yes"
 
