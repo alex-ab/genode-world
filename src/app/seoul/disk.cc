@@ -187,6 +187,15 @@ bool Seoul::Disk::receive(MessageDisk &msg)
 
 		return true;
 	}
+	case MessageDisk::DISK_ALL_REQ_DONE:
+	{
+		Genode::Mutex::Guard guard(_mutex);
+
+		auto & tx = *disk.blk_con->tx();
+		tx.wakeup();
+
+		return true;
+	}
 	case MessageDisk::DISK_WRITE:
 		/* don't write on read only medium */
 		if (!disk.info.writeable) {
@@ -206,6 +215,8 @@ bool Seoul::Disk::receive(MessageDisk &msg)
 		Genode::warning("unknown disk operation ", unsigned(msg.type));
 		return false;
 	}
+
+	return false;
 }
 
 
@@ -239,8 +250,6 @@ bool Seoul::Disk::execute(bool const write, Disk_session const &disk,
 	auto const & fn_resume = [&]() {
 		_resume_execution = true;
 		msg.error         = MessageDisk::DISK_STATUS_BUSY;
-
-		tx.wakeup();
 	};
 
 	if (!tx.ready_to_submit()) {
@@ -258,6 +267,9 @@ bool Seoul::Disk::execute(bool const write, Disk_session const &disk,
 		                     : _execute_read (tx, p, blocks, disk, msg);
 
 		if (!success) {
+
+			tx.release_packet(p);
+
 			if (write) {
 				/* hint that you are doomed with high probability */
 				Genode::error("write packet failed");
@@ -265,12 +277,7 @@ bool Seoul::Disk::execute(bool const write, Disk_session const &disk,
 				/* no sufficient outstanding array space is temporarily */
 				fn_resume();
 			}
-
-			tx.release_packet(p);
 		}
-
-		if (!msg.more || !success)
-			tx.wakeup();
 
 		return success;
 	}, [&](auto /* temporary insufficient space in packet stream */) {
