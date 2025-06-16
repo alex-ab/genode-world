@@ -47,11 +47,6 @@ set memory_vmm_vm     "512M"
 
 set vcpus_to_be_used  2
 
-
-if { [have_spec sel4] } {
-	set vcpus_to_be_used  1
-}
-
 #
 # Download demo image
 #
