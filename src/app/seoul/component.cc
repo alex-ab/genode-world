@@ -191,7 +191,6 @@ class Vcpu : public StaticReceiver<Vcpu>
 	private:
 
 		Genode::Vcpu_handler<Vcpu>          _handler;
-		Genode::Vm_connection::Exit_config  _exit_config { };
 
 		Seoul::Guest_memory                &_guest_memory;
 		Motherboard                        &_motherboard;
@@ -248,7 +247,7 @@ class Vcpu : public StaticReceiver<Vcpu>
 			_vmx(vmx), _svm(svm), _map_small(map_small), _rdtsc_exit(rdtsc),
 			_cpuid_native(_init_cpuid_state(cpuid_native, vcpu_id)),
 			_vm_con(vm_con),
-			_vm_vcpu(_vm_con, alloc, _handler, _exit_config)
+			_vm_vcpu(_vm_con, alloc, _handler, vmx ? exit_config_intel() : Genode::Vm_connection::Exit_config())
 		{
 			if (!_svm && !_vmx)
 				Logging::panic("no SVM/VMX available, sorry");
@@ -463,66 +462,134 @@ class Vcpu : public StaticReceiver<Vcpu>
 
 		}
 
-		void exit_config_intel(Genode::Vcpu_state &state, unsigned exit)
+		Genode::Vm_connection::Exit_config exit_config_intel() const
 		{
-			CpuState dummy_state;
-			unsigned mtd = 0;
+			typedef Genode::Vm_connection::Exit_config::Config_flags Config_flags;
 
-			/* touch the register state required for the specific vm exit */
+			Genode::Vm_connection::Exit_config config { };
 
-			switch (exit) {
-			case 0x02: /* _triple */
-				mtd = MTD_ALL;
-				break;
-			case 0x03: /* _vmx_init */
-				mtd = MTD_ALL;
-				break;
-			case 0x07: /* _vmx_irqwin */
-				mtd = MTD_IRQ;
-				break;
-			case 0x0a: /* _vmx_cpuid */
-				mtd = MTD_RIP_LEN | MTD_GPR_ACDB | MTD_STATE;
-				break;
-			case 0x0c: /* _vmx_hlt */
-				mtd = MTD_RIP_LEN | MTD_IRQ;
-				break;
-			case 0x10: /* _vmx_rdtsc */
-				mtd = MTD_RIP_LEN | MTD_GPR_ACDB | MTD_TSC | MTD_STATE;
-				break;
-			case 0x12: /* _vmx_vmcall */
-				mtd = MTD_RIP_LEN | MTD_GPR_ACDB;
-				break;
-			case 0x1c: /* _vmx_mov_crx */
-				mtd = MTD_ALL;
-				break;
-			case 0x1e: /* _vmx_ioio */
-				mtd = MTD_RIP_LEN | MTD_QUAL | MTD_GPR_ACDB | MTD_GPR_BSD |
-				      MTD_STATE | MTD_RFLAGS;
-				break;
-			case 0x28: /* _vmx_pause */
-				mtd = MTD_RIP_LEN | MTD_STATE;
-				break;
-			case 0x1f: /* _vmx_msr_read */
-			case 0x20: /* _vmx_msr_write */
-				mtd  = MTD_RIP_LEN | MTD_GPR_ACDB | MTD_TSC | MTD_SYSENTER | MTD_STATE;
-				/* 64bit guests */
-				mtd |= MTD_FS_GS | MTD_EFER | MTD_SYSCALL_SWAPGS;
-				mtd |= MTD_INJ | MTD_RFLAGS;
-				break;
-			case 0x21: /* _vmx_invalid */
-			case 0x30: /* _vmx_ept */
-			case 0xfe: /* _vmx_startup */
-				mtd = MTD_ALL;
-				break;
-			case 0xff: /* _recall */
-				mtd = MTD_IRQ | MTD_RIP_LEN | MTD_GPR_ACDB | MTD_GPR_BSD;
-				break;
-			default:
-//				mtd = MTD_RIP_LEN;
-				break;
+#if 1
+			Genode::error(__func__);
+			for (auto &val : config.exits) {
+				val = Config_flags::CNONE;
 			}
+#endif
 
-			Seoul::write_vcpu_state(dummy_state, mtd, state);
+#if 0
+            switch (exit) {
+-                       case 0x02: /* _triple */
+-                               mtd = MTD_ALL;
+-                               break;
+-                       case 0x03: /* _vmx_init */
+-                               mtd = MTD_ALL;
+-                               break;
+-                       case 0x07: /* _vmx_irqwin */
+-                               mtd = MTD_IRQ;
+-                               break;
+-                       case 0x0a: /* _vmx_cpuid */
+-                               mtd = MTD_RIP_LEN | MTD_GPR_ACDB | MTD_STATE;
+-                               break;
+-                       case 0x0c: /* _vmx_hlt */
+-                               mtd = MTD_RIP_LEN | MTD_IRQ;
+-                               break;
+-                       case 0x10: /* _vmx_rdtsc */
+-                               mtd = MTD_RIP_LEN | MTD_GPR_ACDB | MTD_TSC | MTD_STATE;
+-                               break;
+-                       case 0x12: /* _vmx_vmcall */
+-                               mtd = MTD_RIP_LEN | MTD_GPR_ACDB;
+-                               break;
+-                       case 0x1c: /* _vmx_mov_crx */
+-                               mtd = MTD_ALL;
+-                               break;
+-                       case 0x1e: /* _vmx_ioio */
+-                               mtd = MTD_RIP_LEN | MTD_QUAL | MTD_GPR_ACDB | MTD_GPR_BSD |
+-                                     MTD_STATE | MTD_RFLAGS;
+-                               break;
+-                       case 0x28: /* _vmx_pause */
+-                               mtd = MTD_RIP_LEN | MTD_STATE;
+-                               break;
+-                       case 0x1f: /* _vmx_msr_read */
+-                       case 0x20: /* _vmx_msr_write */
+-                               mtd  = MTD_RIP_LEN | MTD_GPR_ACDB | MTD_TSC | MTD_SYSENTER | MTD_STATE;
+-                               /* 64bit guests */
+-                               mtd |= MTD_FS_GS | MTD_EFER | MTD_SYSCALL_SWAPGS;
+-                               mtd |= MTD_INJ | MTD_RFLAGS;
+-                               break;
+-                       case 0x21: /* _vmx_invalid */
+-                       case 0x30: /* _vmx_ept */
+-                       case 0xfe: /* _vmx_startup */
+-                               mtd = MTD_ALL;
+-                               break;
+-                       case 0xff: /* _recall */
+-                               mtd = MTD_IRQ | MTD_RIP_LEN | MTD_GPR_ACDB | MTD_GPR_BSD;
+-                               break;
+-                       default:
+-//                             mtd = MTD_RIP_LEN;
+-                               break;
+-                       }
+-
+#endif
+			auto const IRQ = Config_flags::FLAGS |
+			                 Config_flags::STATE |
+			                 Config_flags::INJ |
+			                 Config_flags::TSC;
+
+			auto const MOST = (0x000fffffu & ~Config_flags::CTRL) |
+			                  Config_flags::CEFER |
+			                  Config_flags::R8_R15 |
+			                  Config_flags::SWAPGS;
+
+			config.exits[0x02] = MOST;   /* _triple */
+			config.exits[0x03] = MOST;   /* _vmx_init */
+#if 1
+			config.exits[0x07] = IRQ;                 /* _vmx_irqwin */
+#endif
+			config.exits[0x0a] = Config_flags::IP |   /* _vmx_cpuid */
+			                     Config_flags::ACDB |
+				                 Config_flags::STATE |
+				                 Config_flags::FLAGS;
+			config.exits[0x0c] = Config_flags::IP |   /* _vmx_hlt */
+			                     IRQ;
+#if 1
+			config.exits[0x10] = Config_flags::IP |
+			                     Config_flags::ACDB |
+			                     Config_flags::TSC |
+			                     Config_flags::FLAGS |
+			                     Config_flags::STATE; /* _vmx_rdtsc */
+			config.exits[0x12] = Config_flags::IP |   /* _vmx_vmcall */
+			                     Config_flags::ACDB;
+			config.exits[0x1c] = MOST;   /* _vmx_mov_crx */
+			config.exits[0x1e] = Config_flags::IP |
+			                     Config_flags::QUAL |
+			                     Config_flags::ACDB |
+			                     Config_flags::EBSD |
+			                     Config_flags::STATE |
+			                     Config_flags::FLAGS; /* _vmx_ioio */
+			config.exits[0x28] = Config_flags::IP |   /* _vmx_pause */
+			                     Config_flags::STATE;
+			config.exits[0x1f] = Config_flags::IP |   /* _vmx_msr_read */
+			                     Config_flags::ACDB |
+			                     Config_flags::TSC |
+			                     Config_flags::STATE |
+			                     Config_flags::SYS |
+			                     Config_flags::FSGS | /* 64bit guests */
+			                     Config_flags::CEFER |
+			                     Config_flags::SWAPGS |
+			                     Config_flags::INJ |
+			                     Config_flags::XSAVE |
+			                     Config_flags::FLAGS;
+			config.exits[0x20] = config.exits[0x1f];  /* _vmx_msr_write */
+			config.exits[0x21] = MOST;   /* _vmx_invalid */
+			config.exits[0x30] = MOST;   /* _vmx_ept */
+			config.exits[0xfe] = MOST;   /* _vmx_startup */
+			config.exits[0xff] = IRQ |                /* _recall */
+			                     Config_flags::IP |
+			                     Config_flags::ACDB |
+			                     Config_flags::FLAGS |
+			                     Config_flags::EBSD;
+#endif
+
+			return config;
 		}
 
 		void exit_config_amd(Genode::Vcpu_state &state, unsigned exit)
