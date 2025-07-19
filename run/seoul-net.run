@@ -28,7 +28,7 @@ set vcpus_to_be_used  1
 
 set multiboot_files {
 		<rom name="munich"/>
-		<rom name="bzImage-3.1" cmdline="root=/dev/ram0 earlyprintk=ttyS0 text"/>
+		<rom name="bzImage-3.1" cmdline="no_timer_check tsc=reliable root=/dev/ram0 earlyprintk=ttyS0 text"/>
 		<rom name="tc-net.gz"/>
 }
 
@@ -52,7 +52,8 @@ foreach binary $guest_os_binaries {
 source ${genode_dir}/repos/world/run/seoul.inc
 
 append qemu_args " -m 1536 "
-append qemu_args " -cpu EPYC "
+#append qemu_args " -cpu EPYC "
+append qemu_args " -accel kvm -cpu host"
 append_qemu_nic_args
 
 run_genode_until forever

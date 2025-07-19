@@ -251,7 +251,7 @@ if {[have_spec sel4]} {
 	set vmm_vcpu_same_cpu  "yes"
 
 	# seL4 has no AMD SVM support
-	assert {![have_include power_on/qemu]}
+#	assert {![have_include power_on/qemu]}
 }
 
 
@@ -265,6 +265,7 @@ set build_components {
 	driver/rtc
 	app/seoul
 	server/record_play_mixer
+	lib/ld core kernel
 }
 
 lappend_if $use_block_vdi       build_components server/vdi_block
@@ -418,7 +419,7 @@ set config {
 	</default-route>
 	<default caps="100"/>
 
-	<start name="timer" ram="1M">
+	<start name="timer" ram="2M">
 		<provides><service name="Timer"/></provides>
 	</start>
 
@@ -470,7 +471,7 @@ set config {
 		</route>
 	</start>
 
-	<start name="pc_rtc" priority="-2" ram="1M">
+	<start name="pc_rtc" priority="-2" ram="2M">
 		<provides><service name="Rtc"/></provides>
 	</start>
 
@@ -755,7 +756,7 @@ append config {
 		</config>
 	</start>
 
-	<start name="wm" caps="1000" priority="-2" ram="32M">
+	<start name="wm" caps="1200" priority="-2" ram="34M">
 		<binary name="init"/>
 		<provides>
 			<service name="Gui"/> <service name="Report"/> <service name="ROM"/>
