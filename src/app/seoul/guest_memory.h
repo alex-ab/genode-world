@@ -145,14 +145,23 @@ class Seoul::Guest_memory
 			_env(env), _vm_con(vm_con), _guest_size(guest_size),
 			_verbose(verbose)
 		{
-			auto const pg_1g = 1ul << 30;
-			auto const pg_4m = 1ul << 22;
+			auto const pg_1g  = 1ul << 30;
+			auto const pg_4m  = 1ul << 22;
+			auto const pg_16m = 1ul << 24;
+			auto const pg_max = pg_1g;
 
 			auto max_offset = guest_size;
 
-			for (auto offset = 0ul, ds_size = (guest_size > pg_1g) ? pg_1g : guest_size;
+			for (auto offset = 0ul, ds_size = (guest_size > pg_max) ? pg_max : guest_size;
 			     offset < max_offset;)
 			{
+				if (ds_size > pg_16m)
+					ds_size = pg_16m;
+				if (offset < 16 * 1024 * 1024)
+					ds_size = 1u << 20;
+				if (offset < 1ul << 21)
+					ds_size = 1u << 20;
+
 				/* cut out io_mem region from normal memory */
 				if (offset < _io_mem_alloc + _io_mem_size) {
 					if (offset >= _io_mem_alloc) {
@@ -180,7 +189,7 @@ class Seoul::Guest_memory
 					offset += ds_size;
 
 					ds_size = max_offset - offset;
-					ds_size = ds_size > pg_1g ? pg_1g : ds_size;
+					ds_size = ds_size > pg_max ? pg_max : ds_size;
 
 				} catch (Genode::Ram_allocator::Denied) {
 
