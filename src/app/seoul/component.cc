@@ -259,6 +259,47 @@ class Vcpu : public StaticReceiver<Vcpu>
 
 		void recall() { _handler.local_submit(); }
 
+		void show_host_cpu_info()
+		{
+			using Genode::log;
+			using Genode::Hex;
+
+			unsigned eax { }, ebx { }, ecx { }, edx { };
+			unsigned cpp = 0;
+
+			if (_vmx) {
+				eax = 4; ebx = ecx = edx = 0;
+				eax = Cpu::cpuid (eax, ebx, ecx, edx);
+				cpp = (eax >> 26 & 0x3f) + 1;
+			}
+			if (_svm) {
+				/* TODO */
+			}
+
+			eax = 1; ebx = ecx = edx = 0;
+			Cpu::cpuid (eax, ebx, ecx, edx);
+
+			unsigned tpp = ebx >> 16 & 0xff;
+
+			unsigned tpc = tpp / cpp;
+			unsigned long t_bits = tpc ? Cpu::bsr(tpc - 1) + 1 : 0;
+			unsigned long c_bits = cpp ? Cpu::bsr(cpp - 1) + 1 : 0;
+
+			if (!t_bits || !c_bits) {
+				Genode::error("vcpu ", _seoul_state.head.cpuid,
+				              " - package:core:thread - unknown");
+				return;
+			}
+
+			auto top      = ebx >> 24;
+			auto thread   = (top            & ((1u << t_bits) - 1)) & 0xff;
+			auto core     = (top >>  t_bits & ((1u << c_bits) - 1)) & 0xff;
+			auto package  = (top >> (t_bits + c_bits)) & 0xff;
+
+			log("vcpu ", _seoul_state.head.cpuid, " - package:core:thread ",
+			    package, ":", core, ":", thread);
+		}
+
 		void _handle_vm_exception()
 		{
 			if (_seoul_state.head.cpuid == ~0U) {
@@ -608,6 +649,8 @@ class Vcpu : public StaticReceiver<Vcpu>
 		/* SVM portal functions */
 		void _svm_startup(Genode::Vcpu_state & state)
 		{
+			show_host_cpu_info();
+
 			_started.down();
 
 			handle_vcpu(state, NO_SKIP, CpuMessage::TYPE_CHECK_IRQ);
@@ -735,6 +778,8 @@ class Vcpu : public StaticReceiver<Vcpu>
 
 		void _vmx_startup(Genode::Vcpu_state & state)
 		{
+			show_host_cpu_info();
+
 			_started.down();
 
 			handle_vcpu(state, NO_SKIP, CpuMessage::TYPE_HLT);
