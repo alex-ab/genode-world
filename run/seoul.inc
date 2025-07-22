@@ -48,7 +48,7 @@ if {![info exists use_usb]}        { set use_usb        1 }
 if {![info exists use_virtio]}     { set use_virtio     0 }
 if {![info exists use_audio]}      { set use_audio      0 }
 if {![info exists use_disk_count]} { set use_disk_count 1 }
-if {![info exists cpuid_native]}   { set cpuid_native   "no" }
+if {![info exists cpuid_native]}   { set cpuid_native   "yes" }
 if {![info exists vdi_name]}       { set vdi_name       "guest.vdi" }
 if {![info exists image]}          { set image          "seoul-disc.raw" }
 if {![info exists use_model_xhci]} { set use_model_xhci 0 }

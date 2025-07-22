@@ -1462,7 +1462,7 @@ void Machine::boot(bool const cpuid_native)
 			}
 		} else {
 
-			xsave = true;
+			xsave = false; //true;
 
 			eax = ebx = ecx = edx = 0;
 			eax = Cpu::cpuid(0, ebx, ecx, edx);
