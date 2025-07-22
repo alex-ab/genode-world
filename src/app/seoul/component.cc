@@ -130,8 +130,10 @@ class Timeouts
 		{
 			auto const next = _check_and_wakeup();
 
-			if (next == ~0ULL)
+			if (next == ~0ULL) {
+				Genode::error("no timeout");
 				return;
+			}
 
 			timevalue rel_timeout_us = _motherboard.clock()->delta(next, 1000 * 1000);
 			if (rel_timeout_us == 0)
@@ -302,18 +304,94 @@ class Vcpu : public StaticReceiver<Vcpu>
 			    package, ":", core, ":", thread);
 		}
 
+		unsigned long last_line = { };
+
+		unsigned long exit_count_last { };
+		unsigned long exit_count_same { };
+
+		unsigned long exit_reason_count[256] { };
+		unsigned long exit_counts { };
+		unsigned long ioio[1 << 16] { };
+		unsigned long ios { 1 };
+		unsigned long io_count = 0;
+
+		void track_exit_counts(auto const exit_reason)
+		{
+			if (exit_reason < sizeof(exit_reason_count) / sizeof(*exit_reason_count))
+				exit_reason_count[exit_reason] ++;
+
+			exit_counts ++;
+		}
+
+		void track_io_counts(auto const &state)
+		{
+			io_count ++;
+			if (state.qual_primary.value() & 0x10) {
+				ios++;
+			} else {
+				auto port = unsigned(state.qual_primary.value() >> 16);
+				if (port > 1 << 16)
+					Genode::error("io port too high ", port);
+
+				ioio[port] ++;
+			}
+		}
+
+		void dump_exit_counts()
+		{
+			bool no_exits = true;
+
+			for (unsigned i = 0; i < 256; i++) {
+				auto &count = exit_reason_count[i];
+				if (count != 0)
+					Genode::error("[", _seoul_state.head.cpuid, "] exit=", i, " count=", count);
+				if (count > 0)
+					no_exits = false;
+				count = 0;
+			}
+
+			if (no_exits) {
+				Genode::error("-> no exits happened");
+			}
+
+			if (io_count % 10'000 == 0 || ios % 100 == 0) {
+				for (unsigned i = 0; i < (1u << 16); i++) {
+					if (ioio[i] > 0)
+						Genode::error("  io port ", Genode::Hex(i), " ", ioio[i], " io_count=", io_count, " ios=", ios);
+					ioio[i] = 0;
+				}
+				if (ios > 0) {
+					Genode::error(" ios ", ios);
+					ios = 1;
+				}
+			}
+		}
+
 		void _handle_vm_exception()
 		{
+			last_line = __LINE__;
+
+			if (exit_count_same >= 10)
+				Genode::error("[", _seoul_state.head.cpuid, "] hell what is ongoing ", exit_count_same);
+
 			if (_seoul_state.head.cpuid == ~0U) {
 				Genode::sleep_forever();
 				return;
 			}
 
+			last_line = __LINE__;
+
 			_vm_vcpu.with_state([this](Genode::Vcpu_state &state) -> bool {
 				unsigned const exit = state.exit_reason;
 
+				last_line = __LINE__;
+
 //error("exit ", Genode::Hex(state.exit_reason));
 				lastexit_a = exit;
+
+				track_exit_counts(exit);
+
+				last_line = __LINE__;
 
 				if (_svm) {
 					switch (exit) {
@@ -338,6 +416,8 @@ class Vcpu : public StaticReceiver<Vcpu>
 					case 0xfe: _svm_startup(state); break;
 					case 0xff: _recall(state); break;
 					default:
+						last_line = __LINE__;
+
 						Genode::error(__func__, " exit=", Genode::Hex(exit));
 						/* no resume */
 						return false;
@@ -354,7 +434,7 @@ class Vcpu : public StaticReceiver<Vcpu>
 					case 0x10: _vmx_rdtsc(state); break;
 					case 0x12: _vmx_vmcall(state); break;
 					case 0x1c: _vmx_mov_crx(state); break;
-					case 0x1e: _vmx_ioio(state); break;
+					case 0x1e: track_io_counts(state); _vmx_ioio(state); break;
 					case 0x1f: _vmx_msr_read(state); break;
 					case 0x20: _vmx_msr_write(state); break;
 					case 0x21: _vmx_invalid(state); break;
@@ -370,13 +450,17 @@ class Vcpu : public StaticReceiver<Vcpu>
 					case 0xfe: _vmx_startup(state); break;
 					case 0xff: _recall(state); break;
 					default:
+						last_line = __LINE__;
 						Genode::error(__func__, " exit=", Genode::Hex(exit));
 						/* no resume */
 						return false;
 					}
 				}
+				last_line = __LINE__;
 				return true;
 			});
+			last_line = __LINE__;
+
 		}
 
 		void exit_config_intel(Genode::Vcpu_state &state, unsigned exit)
@@ -941,6 +1025,10 @@ class Machine : public StaticReceiver<Machine>
 		Vcpu *                 _vcpus[16]    { nullptr };
 		Vcpus_active           _vcpus_active { };
 
+		/* debug */
+		MessageTimer  _mtimer { };
+		unsigned long _debug_timeout { };
+
 		static bool _all_inactive(Vcpus_active const &a)
 		{
 			return a.get(0, 64).convert<bool>([] (bool v) { return !v; },
@@ -954,6 +1042,12 @@ class Machine : public StaticReceiver<Machine>
 		Machine &operator = (Machine const &);
 
 		bool powered() { return !!_vcpus_up; }
+
+		auto for_each_online_vcpu(auto const &fn)
+		{
+			for (auto vcpu : _vcpus)
+				if (vcpu) fn(*vcpu);
+		}
 
 	public:
 
@@ -1143,8 +1237,10 @@ class Machine : public StaticReceiver<Machine>
 						}
 					}
 
+					_vcpus[vcpu_id]->last_line = __LINE__;
 					_vcpus[vcpu_id]->block();
 
+					_vcpus[vcpu_id]->last_line = __LINE__;
 					if (!powered())
 						Genode::sleep_forever();
 
@@ -1160,6 +1256,7 @@ class Machine : public StaticReceiver<Machine>
 						(void)_vcpus_active.set(vcpu_id, 1);
 					}
 
+					_vcpus[vcpu_id]->last_line = __LINE__;
 					return true;
 				}
 
@@ -1307,6 +1404,40 @@ class Machine : public StaticReceiver<Machine>
 			return false;
 		}
 
+		bool receive(MessageTimeout &msg)
+		{
+			if (msg.nr != _mtimer.nr)
+				return false;
+
+			_debug_timeout++;
+
+//			Genode::error("got timeout ", _debug_timeout);
+
+			for_each_online_vcpu([&](auto &vcpu) {
+				if (vcpu.exit_count_same > 1)
+					Genode::error("vcpu ", &vcpu, " ", vcpu.exit_counts, " same=", vcpu.exit_count_same, " last_line=", vcpu.last_line);
+
+				if (vcpu.exit_counts == vcpu.exit_count_last) {
+					vcpu.exit_count_same ++;
+
+					if (vcpu.exit_count_same > 1)
+						vcpu.dump_exit_counts();
+
+					if (vcpu.exit_count_same % 2 == 0)
+						vcpu.recall();
+				}
+				else {
+					vcpu.exit_count_last = vcpu.exit_counts;
+					vcpu.exit_count_same = 0;
+				}
+			});
+
+			MessageTimer msg_t(_mtimer.nr, _motherboard.clock()->abstime(1'000, 1000));
+			_motherboard.bus_timer.send(msg_t);
+
+			return true;
+		}
+
 		static unsigned long long _tsc_from_platform_info(Xml_node const &platform_info)
 		{
 			return platform_info.with_sub_node("hardware",
@@ -1343,6 +1474,15 @@ class Machine : public StaticReceiver<Machine>
 			_motherboard.bus_acpi.add    (this, receive_static<MessageAcpi>);
 			_motherboard.bus_legacy.add  (this, receive_static<MessageLegacy>);
 			_motherboard.bus_audio.add   (this, receive_static<MessageAudio>);
+
+			/* debug */
+			_motherboard.bus_timeout.add(this, receive_static<MessageTimeout>);
+
+			if (!_motherboard.bus_timer.send(_mtimer))
+				Logging::panic("%s can't get a timer", __PRETTY_FUNCTION__);
+
+			MessageTimer msg_t(_mtimer.nr, _motherboard.clock()->abstime(1'000, 1000));
+			_motherboard.bus_timer.send(msg_t);
 		}
 
 
