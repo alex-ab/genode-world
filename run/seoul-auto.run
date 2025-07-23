@@ -48,7 +48,7 @@ set use_top           1
 
 set memory_vmm_vm     "1512M"
 
-set vcpus_to_be_used  2
+set vcpus_to_be_used  1
 
 #
 # Download demo image
