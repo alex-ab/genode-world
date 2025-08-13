@@ -74,6 +74,8 @@ extern void heap_init_env(Genode::Heap *);
 
 using Genode::Attached_rom_dataspace;
 
+extern "C" unsigned lastexit_a;
+unsigned lastexit_a = 0;
 
 class Timeouts
 {
@@ -309,6 +311,9 @@ class Vcpu : public StaticReceiver<Vcpu>
 
 			_vm_vcpu.with_state([this](Genode::Vcpu_state &state) -> bool {
 				unsigned const exit = state.exit_reason;
+
+//error("exit ", Genode::Hex(state.exit_reason));
+				lastexit_a = exit;
 
 				if (_svm) {
 					switch (exit) {
