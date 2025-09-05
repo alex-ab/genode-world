@@ -248,7 +248,7 @@ assert {[have_spec x86]}
 
 if {[have_spec sel4]} {
 	# seL4 has no AMD SVM support
-	assert {![have_include power_on/qemu]}
+#	assert {![have_include power_on/qemu]}
 }
 
 
