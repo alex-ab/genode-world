@@ -203,6 +203,7 @@ class Vcpu : public StaticReceiver<Vcpu>
 		bool const                          _map_small;
 		bool const                          _rdtsc_exit;
 		bool const                          _cpuid_native;
+		bool const                          _track_exits;
 
 		/* initialize after other members, vCPU gets runnable immediately */
 		Genode::Vm_connection              &_vm_con;
@@ -233,7 +234,8 @@ class Vcpu : public StaticReceiver<Vcpu>
 		     bool     const          svm,
 		     bool     const          map_small,
 		     bool     const          rdtsc,
-		     bool     const          cpuid_native)
+		     bool     const          cpuid_native,
+		     bool     const          track_exits)
 		:
 			_handler(ep, *this, &Vcpu::_handle_vm_exception),
 //			         vmx ? &Vcpu::exit_config_intel :
@@ -243,6 +245,7 @@ class Vcpu : public StaticReceiver<Vcpu>
 			_vcpu(vcpu),
 			_vmx(vmx), _svm(svm), _map_small(map_small), _rdtsc_exit(rdtsc),
 			_cpuid_native(_init_cpuid_state(cpuid_native, vcpu_id)),
+			_track_exits(track_exits),
 			_vm_con(vm_con),
 			_vm_vcpu(_vm_con, alloc, _handler, _exit_config)
 		{
@@ -332,8 +335,77 @@ class Vcpu : public StaticReceiver<Vcpu>
 			    package, ":", core, ":", thread);
 		}
 
+		unsigned long exit_count_last { };
+		unsigned long exit_count_same { };
+
+		unsigned long exit_reason_count[256] { };
+		unsigned long exit_counts { };
+		unsigned long ioio[1 << 16] { };
+		unsigned long ios { 1 };
+		unsigned long io_count = 0;
+
+		void track_exit_counts(auto const exit_reason)
+		{
+			if (!_track_exits)
+				return;
+
+			if (exit_reason < sizeof(exit_reason_count) / sizeof(*exit_reason_count))
+				exit_reason_count[exit_reason] ++;
+
+			exit_counts ++;
+		}
+
+		void track_io_counts(auto const &state)
+		{
+			if (!_track_exits)
+				return;
+
+			io_count ++;
+			if (state.qual_primary.value() & 0x10) {
+				ios++;
+			} else {
+				auto port = unsigned(state.qual_primary.value() >> 16);
+				if (port < sizeof(ioio) / sizeof(*ioio))
+					ioio[port] ++;
+			}
+		}
+
+		void dump_exit_counts()
+		{
+			bool no_exits = true;
+
+			for (unsigned i = 0; i < 256; i++) {
+				auto &count = exit_reason_count[i];
+				if (count != 0)
+					Genode::error(" [", _seoul_state.head.cpuid, "] exit=", i, " count=", count);
+				if (count > 0)
+					no_exits = false;
+				count = 0;
+			}
+
+			if (no_exits) {
+				Genode::error("-> no exits happened");
+			}
+
+			if (io_count % 10'000 == 0 || ios % 100 == 0) {
+				for (unsigned i = 0; i < (1u << 16); i++) {
+					if (ioio[i] > 0)
+						Genode::error(" io port ", Genode::Hex(i), " ", ioio[i], " io_count=", io_count, " ios=", ios);
+					ioio[i] = 0;
+				}
+				if (ios > 0) {
+					Genode::error(" ios ", ios);
+					ios = 1;
+				}
+			}
+		}
+
 		void _handle_vm_exception()
 		{
+			if (exit_count_same >= 10)
+				Genode::error("[", _seoul_state.head.cpuid,
+				              "] hell what is ongoing ", exit_count_same);
+
 			if (_seoul_state.head.cpuid == ~0U) {
 				Genode::sleep_forever();
 				return;
@@ -341,6 +413,8 @@ class Vcpu : public StaticReceiver<Vcpu>
 
 			_vm_vcpu.with_state([this](Genode::Vcpu_state &state) -> bool {
 				unsigned const exit = state.exit_reason;
+
+				track_exit_counts(exit);
 
 				if (_svm) {
 					switch (exit) {
@@ -381,7 +455,7 @@ class Vcpu : public StaticReceiver<Vcpu>
 					case 0x10: _vmx_rdtsc(state); break;
 					case 0x12: _vmx_vmcall(state); break;
 					case 0x1c: _vmx_mov_crx(state); break;
-					case 0x1e: _vmx_ioio(state); break;
+					case 0x1e: track_io_counts(state); _vmx_ioio(state); break;
 					case 0x1f: _vmx_msr_read(state); break;
 					case 0x20: _vmx_msr_write(state); break;
 					case 0x21: _vmx_invalid(state); break;
@@ -955,6 +1029,7 @@ struct Vmm {
 	bool vmm_vcpu_same_cpu { };
 	bool cpuid_native      { };
 	bool memory_verbose    { };
+	bool track_exits       { };
 
 	void read_config(Genode::Node const &node)
 	{
@@ -964,6 +1039,7 @@ struct Vmm {
 		cpuid_native      = node.attribute_value("cpuid_native", cpuid_native);
 		memory_verbose    = node.attribute_value("verbose_mem", memory_verbose);
 		vmm_size          = node.attribute_value("vmm_memory", vmm_size);
+		track_exits       = node.attribute_value("track_exits", track_exits);
 	}
 
 	Vmm(Genode::Env &env) : env(env)
@@ -1018,6 +1094,10 @@ class Machine : public StaticReceiver<Machine>
 		Vcpu *                 _vcpus[16]    { nullptr };
 		Vcpus_active           _vcpus_active { };
 
+		/* debug */
+		MessageTimer  _mtimer { };
+		unsigned long _debug_timeout { };
+
 		static bool _all_inactive(Vcpus_active const &a)
 		{
 			return a.get(0, 64).convert<bool>([] (bool v) { return !v; },
@@ -1031,6 +1111,12 @@ class Machine : public StaticReceiver<Machine>
 		Machine &operator = (Machine const &);
 
 		bool powered() { return !!_vcpus_up; }
+
+		auto for_each_online_vcpu(auto const &fn)
+		{
+			for (auto vcpu : _vcpus)
+				if (vcpu) fn(*vcpu);
+		}
 
 	public:
 
@@ -1158,7 +1244,8 @@ class Machine : public StaticReceiver<Machine>
 					                     *msg.vcpu, _guest_memory, _motherboard,
 					                     _vcpus_up, has_vmx, has_svm,
 					                     _vmm.map_small, _vmm.rdtsc_exit,
-					                     _vmm.cpuid_native);
+					                     _vmm.cpuid_native,
+					                     _vmm.track_exits);
 
 					_vcpus[_vcpus_up] = vcpu;
 					msg.value = _vcpus_up;
@@ -1383,6 +1470,39 @@ class Machine : public StaticReceiver<Machine>
 			return false;
 		}
 
+		bool receive(MessageTimeout &msg)
+		{
+			if (msg.nr != _mtimer.nr)
+				return false;
+
+			_debug_timeout++;
+
+			for_each_online_vcpu([&](auto &vcpu) {
+				if (vcpu.exit_count_same > 1)
+					Genode::error("vcpu ", &vcpu, " ", vcpu.exit_counts, " same=", vcpu.exit_count_same);
+
+				if (vcpu.exit_counts == vcpu.exit_count_last) {
+					vcpu.exit_count_same ++;
+
+					if (vcpu.exit_count_same > 1)
+						vcpu.dump_exit_counts();
+
+					if (vcpu.exit_count_same % 2 == 0) {
+						Genode::error(" -> forcing recall");
+						vcpu.recall();
+					}
+				} else {
+					vcpu.exit_count_last = vcpu.exit_counts;
+					vcpu.exit_count_same = 0;
+				}
+			});
+
+			MessageTimer msg_t(_mtimer.nr, _motherboard.clock()->abstime(1'000, 1000));
+			_motherboard.bus_timer.send(msg_t);
+
+			return true;
+		}
+
 		static unsigned long long _tsc_from_platform_info(Node const &platform_info)
 		{
 			return platform_info.with_sub_node("hardware",
@@ -1412,6 +1532,18 @@ class Machine : public StaticReceiver<Machine>
 			_motherboard.bus_acpi.add    (this, receive_static<MessageAcpi>);
 			_motherboard.bus_legacy.add  (this, receive_static<MessageLegacy>);
 			_motherboard.bus_audio.add   (this, receive_static<MessageAudio>);
+
+			if (!vmm.track_exits)
+				return;
+
+			/* debug */
+			_motherboard.bus_timeout.add(this, receive_static<MessageTimeout>);
+
+			if (!_motherboard.bus_timer.send(_mtimer))
+				Logging::panic("%s can't get a timer", __PRETTY_FUNCTION__);
+
+			MessageTimer msg_t(_mtimer.nr, _motherboard.clock()->abstime(1'000, 1000));
+			_motherboard.bus_timer.send(msg_t);
 		}
 
 

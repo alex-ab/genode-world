@@ -273,7 +273,7 @@ puts $vm_cfg_fd "<config cpuid_native=\"$cpuid_native\""
 puts $vm_cfg_fd { vmm_memory="64M" ld_verbose="yes">
 	<!-- The performance is considerable bad when vmm and vcpu is not on same physical CPU -->
 	<kernel name="foc"  vmm_vcpu_same_cpu="yes" cpuid_native="no"/>
-	<kernel name="sel4" vmm_vcpu_same_cpu="yes" cpuid_native="no" map_small="yes"/>
+	<kernel name="sel4" vmm_vcpu_same_cpu="yes" cpuid_native="no" map_small="yes" track_exits="yes"/>
 	<machine verbose="no">
 		<mem start="0x0"         end="0x9a000"/>
 		<mem start="0x100000"    end="0xc0000000"/>   <!-- [1M- 3G) -->
