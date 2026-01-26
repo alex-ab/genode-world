@@ -5,7 +5,7 @@
      LIBHOGWEED_SONAME='$(LIBHOGWEED_FORLINK).$(LIBHOGWEED_MAJOR)'
      LIBHOGWEED_FILE='$(LIBHOGWEED_SONAME).$(LIBHOGWEED_MINOR)'
 -    LIBHOGWEED_LINK='$(CC) $(CFLAGS) $(LDFLAGS) -shared -Wl,-soname=$(LIBHOGWEED_SONAME)'
-+    LIBHOGWEED_LINK='$(CC) $(LDFLAGS) $(nettle_OBJS) $(filter-out -l:posix.lib.so,$(LDLIBS_SHARED))'
++    LIBHOGWEED_LINK='$(CC) $(LDFLAGS) $(nettle_OBJS) -shared -Wl,-soname=$(LIBHOGWEED_SONAME)'
      # Requested by debian, to make linking with only -lhogweed work
      # (does not work in general, e.g., with static linking all of
      # -lhogweed -lgmp -lnettle are still required). Also makes dlopen

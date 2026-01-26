@@ -17,30 +17,6 @@
  esac
  
  fi
-@@ -59114,6 +59116,11 @@ _LT_EOF
-       hardcode_shlibpath_var=no
-       ;;
- 
-+    genode*)
-+      archive_cmds='$CC $libobjs $deplibs '$LDLIBS_SHARED' -o $lib'
-+      archive_expsym_cmds=''
-+      ;;
-+
-     *)
-       if $LD --help 2>&1 | $GREP ': supported targets:.* elf' > /dev/null; then
- 	archive_cmds='$CC -shared $pic_flag $libobjs $deplibs $compiler_flags $wl-soname $wl$soname -o $lib'
-@@ -59977,6 +59984,11 @@ $as_echo "$lt_cv_irix_exported_symbol" >
-       hardcode_shlibpath_var=no
-       ;;
- 
-+    genode*)
-+      archive_cmds='$CC $libobjs $deplibs '$LDLIBS_SHARED' -o $lib'
-+      archive_expsym_cmds=''
-+      ;;
-+
-     *)
-       ld_shlibs=no
-       ;;
 @@ -61048,6 +61060,13 @@ uts4*)
    shlibpath_var=LD_LIBRARY_PATH
    ;;
@@ -55,19 +31,6 @@
  *)
    dynamic_linker=no
    ;;
-@@ -63320,6 +63339,12 @@ fi
-         ld_shlibs_CXX=no
-         ;;
- 
-+      genode*)
-+        archive_cmds_CXX='$CC $libobjs $deplibs '$LDLIBS_SHARED' -o $lib'
-+        archive_expsym_cmds_CXX=''
-+        ld_shlibs_CXX=yes
-+        ;;
-+
-       *)
-         # FIXME: insert proper C++ library support
-         ld_shlibs_CXX=no
 @@ -65013,6 +65038,13 @@ uts4*)
    shlibpath_var=LD_LIBRARY_PATH
    ;;
