@@ -1,0 +1,26 @@
+LICENSE   := LGPLv2.1
+VERSION   := 2.85.4
+DOWNLOADS := glib.archive
+
+BASE_URL  := https://download.gnome.org/sources/glib/2.85
+URL(glib) := $(BASE_URL)/glib-$(VERSION).tar.xz
+SHA(glib) := 432d84c8e44fe689ff70a5d88dab6d0f70d5efcf7460b965ac560dbac3c6c185
+DIR(glib) := src
+
+PATCHES := $(addprefix patches/,genode-dummies-fix-dependencies.patch \
+                                libffi.patch)
+
+PATCH_OPT(patches/genode-dummies-fix-dependencies.patch) := -p1 -dsrc
+PATCH_OPT(patches/libffi.patch)                          := -p1 -dsrc/subprojects/libffi
+
+#
+# download required submodules
+#
+define download_subprojects
+subprojects: glib.archive
+	cd src && meson subprojects download libffi pcre2 proxy-libintl
+endef
+
+_patch: subprojects
+
+$(eval $(call download_subprojects))

@@ -1,0 +1,3 @@
+$ORIGIN/../glib
+$ORIGIN/../subprojects/proxy-libintl
+$ORIGIN/../subprojects/libffi/src

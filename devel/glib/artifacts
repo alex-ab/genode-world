@@ -1,0 +1,4 @@
+install/lib/gio.lib.so
+install/lib/glib.lib.so
+install/lib/gobject.lib.so
+install/lib/gmodule.lib.so

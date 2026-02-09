@@ -1,0 +1,46 @@
+diff --git a/meson.build b/meson.build
+index ae7d0aa..f3c7987 100644
+--- a/meson.build
++++ b/meson.build
+@@ -16,9 +16,10 @@ endif
+ ffi_conf = configuration_data()
+ 
+ # NOTE: host = "cross" or "target"
+-host_cpu_family = host_machine.cpu_family()
++# On Genode use target_machine as host, since we cross-compile
++host_cpu_family = target_machine.cpu_family()
+ host_system = host_machine.system()
+-message('host cpu: ' + host_machine.cpu())
++message('host cpu: ' + target_machine.cpu())
+ message('host cpu_family: ' + host_cpu_family)
+ message('host system: ' + host_system)
+ 
+@@ -218,7 +219,7 @@ if host_cpu_family.startswith('x86')
+         asm_sources = ['win64.S']
+       endif
+     endif
+-  elif ['darwin', 'ios', 'linux', 'android'].contains(host_system)
++  elif ['darwin', 'ios', 'linux', 'android', 'freebsd'].contains(host_system)
+     if size_t == 4
+       if ['darwin', 'ios'].contains(host_system)
+         TARGET = 'X86_DARWIN'
+diff --git a/src/meson.build b/src/meson.build
+index 1ac3b26..9cdffea 100644
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -97,13 +97,9 @@ ffi_lib = library('ffi', ffi_c_sources, ffi_asm_sources,
+   c_args : '-DTARGET=' + TARGET,
+   include_directories : ffiinc,
+   link_args: ffi_link_args,
+-  # Taken from the libtool-version file
+-  # current - age . age . revision
+-  version : '7.1.0',
+-  # current - age
+-  soversion : '7',
+-  # current + 1
+   darwin_versions : '9',
++  name_prefix: '',
++  name_suffix: 'lib.so',
+   install : true)
+ 
+ pkgconf = import('pkgconfig')

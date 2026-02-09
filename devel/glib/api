@@ -1,0 +1,8 @@
+include:install/include/glib-2.0/
+include:install/lib/glib-2.0/include/glibconfig.h
+include/glib:install/include/glib-2.0/glib/
+include/glib/deprecated:install/include/glib-2.0/glib/deprecated/
+include/gio:install/include/glib-2.0/gio/
+include/girepository:install/include/glib-2.0/girepository/
+include/gmodule:install/include/glib-2.0/gmodule/
+include/gobject:install/include/glib-2.0/gobject/
