@@ -18,7 +18,7 @@ If you encounter bugs, build problems, or stability issues, please report them
 to the issue tracker [1], the Genode mailing list [2] or the Genode community
 forum [3].
 
-[1] https://github.com/genodelabs/genode-world/issues
+[1] https://codeberg.org/genodelabs/genode-world/issues
 [2] https://genode.org/community/mailing-lists
 [3] https://genode.discourse.group
 
@@ -36,7 +36,7 @@ Keeping it close while starting your journey is strongly recommended.
 With the technical aspects of using Goa already covered well in the book,
 clone the _genode-world.git_ repository to a place of your choosing:
 
-! git clone https://github.com/genodelabs/genode-world.git
+! git clone https://codeberg.org/genodelabs/genode-world.git
 
 Afterwards you are free to explore the repository and 'goa import', 'build',
 'export', 'publish' and 'run' any project you like and add new ones.

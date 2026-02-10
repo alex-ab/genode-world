@@ -3,5 +3,5 @@ OCAML_SRC_DIR :=  $(OCAML_PORT_DIR)/src/ocaml
 
 INC_DIR += $(REP_DIR)/src/app/ocamlrun
 
-# workaround for https://github.com/genodelabs/genode-world/issues/180
+# workaround for https://codeberg.org/genodelabs/genode-world/issues/180
 REQUIRES += x86_64

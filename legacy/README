@@ -17,7 +17,7 @@ To use it, you first need to obtain a clone of Genode:
 
 Now, clone the _genode-world.git_ repository to _genode/repos/world_:
 
-! git clone https://github.com/genodelabs/genode-world.git genode/repos/world
+! git clone https://codeberg.org/genodelabs/genode-world.git genode/repos/world
 
 By placing the _world_ repository under the _repos/_ directory, Genode's tools
 will automatically incorporate the ports provided by the _world_ repository.
@@ -37,5 +37,5 @@ quality-assurance measures of Genode Labs. Hence, problems are to be expected.
 If you encounter bugs, build problems, or stability issues, please report them
 to the issue tracker [1] or the Genode mailing list [2].
 
-[1] https://github.com/genodelabs/genode-world/issues
+[1] https://codeberg.org/genodelabs/genode-world/issues
 [2] http://genode.org/community/mailing-lists
