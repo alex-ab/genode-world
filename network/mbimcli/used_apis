@@ -1,0 +1,8 @@
+_/api/base
+_/api/os
+_/api/libc
+_/api/net
+_/api/glib
+_/api/libmbim
+_/api/report_session
+_/api/stdcxx

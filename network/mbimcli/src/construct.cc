@@ -26,7 +26,6 @@
 #include <net/ipv4.h>
 
 /* libc includes */
-#include <libc/args.h>
 #include <stdlib.h> /* 'exit'   */
 
 #include <libmbim-glib.h>
@@ -34,9 +33,21 @@ extern "C" {
 #include <mbimcli.h>
 }
 
+/* is in library archive */
+Net::Ipv4_address Net::Ipv4_address::from_uint32_little_endian(uint32_t ip_raw)
+{
+	Net::Ipv4_address ip;
+	ip.addr[3] = (uint8_t)(ip_raw);
+	ip.addr[2] = (uint8_t)(ip_raw >> 8);
+	ip.addr[1] = (uint8_t)(ip_raw >> 16);
+	ip.addr[0] = (uint8_t)(ip_raw >> 24);
+	return ip;
+}
+
+
 class Mbim
 {
-	enum { TRACE = FALSE };
+	enum { TRACE = TRUE };
 
 	enum State { NONE, UNLOCK, PIN, QUERY, ATTACH, CONNECT, READY };
 
@@ -126,7 +137,7 @@ class Mbim
 			return _network.pin.string();
 		}
 
-		static void _device_close_ready (MbimDevice   *dev,
+		static void _device_close_ready (MbimDevice   *,
 		                                 GAsyncResult *res, gpointer user_data)
 		{
 			Mbim *mbim = reinterpret_cast<Mbim *>(user_data);
@@ -139,7 +150,7 @@ class Mbim
 			g_main_loop_quit(mbim->_loop);
 		}
 
-		void _shutdown(gboolean operation_status)
+		void _shutdown(gboolean)
 		{
 			/* Set the in-session setup */
 			g_object_set(_device,
@@ -300,7 +311,7 @@ class Mbim
 			}
 		}
 
-		static void _pin_ready(MbimDevice   *dev,
+		static void _pin_ready(MbimDevice   *,
 		                       GAsyncResult *res, gpointer user_data)
 		{
 			Mbim *mbim = _mbim(user_data);
@@ -345,7 +356,7 @@ class Mbim
 			mbim->_send_request();
 		}
 
-		static void _subscriber_state(MbimDevice   *dev,
+		static void _subscriber_state(MbimDevice   *,
 		                              GAsyncResult *res, gpointer user_data)
 		{
 			Mbim *mbim = _mbim(user_data);
@@ -389,7 +400,7 @@ class Mbim
 			mbim->_send_request();
 		}
 
-		static void _register_state(MbimDevice   *dev,
+		static void _register_state(MbimDevice   *,
 		                            GAsyncResult *res, gpointer user_data)
 		{
 			Mbim *mbim = _mbim(user_data);
@@ -456,9 +467,9 @@ class Mbim
 			 * registration. The delay is based on exponential backoff with
 			 * upper bound.
 			 */
-			guint const delay = mbim->_backoff < Mbim::BACKOFF_LIMIT
+			guint const delay = mbim->_backoff < unsigned(Mbim::BACKOFF_LIMIT)
 			                  ? mbim->_backoff *= 2
-			                  : Mbim::BACKOFF_LIMIT;
+			                  : guint(Mbim::BACKOFF_LIMIT);
 			g_timeout_add(delay, _handle_timeout, mbim);
 		}
 
@@ -471,7 +482,7 @@ class Mbim
 			return FALSE;
 		}
 
-		static void _packet_service_ready(MbimDevice   *dev,
+		static void _packet_service_ready(MbimDevice   *,
 		                                  GAsyncResult *res, gpointer user_data)
 		{
 			Mbim *mbim = _mbim(user_data);
@@ -515,7 +526,7 @@ class Mbim
 			mbim->_send_request();
 		}
 
-		static void _connect_ready(MbimDevice   *dev,
+		static void _connect_ready(MbimDevice   *,
 		                           GAsyncResult *res, gpointer user_data)
 		{
 			Mbim *mbim = _mbim(user_data);
@@ -549,7 +560,7 @@ class Mbim
 			mbim->_send_request();
 		}
 
-		static void _ip_configuration_query_ready(MbimDevice   *dev,
+		static void _ip_configuration_query_ready(MbimDevice   *,
 		                                          GAsyncResult *res,
 		                                          gpointer user_data)
 		{
@@ -647,7 +658,7 @@ class Mbim
 		}
 
 
-		static void _device_new_ready(GObject *unsused, GAsyncResult *res, gpointer user_data)
+		static void _device_new_ready(GObject *, GAsyncResult *res, gpointer user_data)
 		{
 			Mbim *mbim = reinterpret_cast<Mbim *>(user_data);
 			GError *error = nullptr;
@@ -688,10 +699,10 @@ class Mbim
 			}
 		}
 
-		static void _log_handler(const gchar *log_domain,
+		static void _log_handler(const gchar *,
 		                         GLogLevelFlags log_level,
 		                         const gchar *message,
-		                         gpointer user_data)
+		                         gpointer)
 		{
 			Genode::String<32> level;
 			switch (log_level) {
@@ -733,7 +744,7 @@ class Mbim
 			mbim_device_new(file, nullptr, (GAsyncReadyCallback)_device_new_ready, this);
 		}
 
-		static void _handle_indicate_status(MbimDevice* dev,
+		static void _handle_indicate_status(MbimDevice *,
 		                             MbimMessage* msg,
 		                             gpointer user_data)
 		{
@@ -869,7 +880,7 @@ class Mbim
 			}
 		}
 
-		static void _handle_hangup(MbimDevice* dev,
+		static void _handle_hangup(MbimDevice *,
 		                    gpointer user_data)
 		{
 			Mbim *mbim = _mbim(user_data);
@@ -1087,6 +1098,9 @@ class Mbim
 			_connect();
 			exit(0);
 		}
+
+		Mbim(Mbim const &) = delete;
+		Mbim & operator = (Mbim const &) = delete;
 };
 
 
