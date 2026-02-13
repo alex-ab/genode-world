@@ -1,0 +1,91 @@
+diff --git a/meson.build b/meson.build
+index d71bcf8..667e953 100644
+--- a/meson.build
++++ b/meson.build
+@@ -120,7 +120,7 @@ add_project_arguments(common_flags + cc_flags, language: 'c')
+ 
+ glib_version = '2.56'
+ 
+-glib_dep = dependency('glib-2.0', version: '>= ' + glib_version)
++glib_dep = dependency('glib-2.0')
+ gio_unix_dep = dependency('gio-unix-2.0')
+ 
+ deps = [
+diff --git a/src/libmbim-glib/mbim-message.c b/src/libmbim-glib/mbim-message.c
+index 96566ff..b34a34e 100644
+--- a/src/libmbim-glib/mbim-message.c
++++ b/src/libmbim-glib/mbim-message.c
+@@ -12,7 +12,7 @@
+ #include <stdint.h>
+ #include <stdio.h>
+ #include <string.h>
+-#include <endian.h>
++#include <sys/endian.h>
+ 
+ #include "mbim-message.h"
+ #include "mbim-message-private.h"
+diff --git a/src/libmbim-glib/mbim-tlv.c b/src/libmbim-glib/mbim-tlv.c
+index 38bd622..6e57ac4 100644
+--- a/src/libmbim-glib/mbim-tlv.c
++++ b/src/libmbim-glib/mbim-tlv.c
+@@ -11,7 +11,7 @@
+ #include <stdint.h>
+ #include <stdio.h>
+ #include <string.h>
+-#include <endian.h>
++#include <sys/endian.h>
+ 
+ #include "mbim-tlv.h"
+ #include "mbim-tlv-private.h"
+diff --git a/src/libmbim-glib/meson.build b/src/libmbim-glib/meson.build
+index 6579023..90c1ecc 100644
+--- a/src/libmbim-glib/meson.build
++++ b/src/libmbim-glib/meson.build
+@@ -39,11 +39,7 @@ sources = files(
+   'mbim-compat.c',
+   'mbim-device.c',
+   'mbim-helpers.c',
+-  'mbim-helpers-netlink.c',
+   'mbim-message.c',
+-  'mbim-net-port-manager.c',
+-  'mbim-net-port-manager-wdm.c',
+-  'mbim-net-port-manager-wwan.c',
+   'mbim-proxy.c',
+   'mbim-proxy-helpers.c',
+   'mbim-utils.c',
+@@ -71,7 +67,7 @@ libmbim_glib_core_dep = declare_dependency(
+   link_with: libmbim_glib_core,
+ )
+ 
+-libname = 'mbim-glib'
++libname = 'mbim'
+ 
+ version_header = configure_file(
+   input: 'mbim-version.h.in',
+@@ -85,7 +81,6 @@ ldflags = cc.get_supported_link_arguments('-Wl,--version-script,@0@'.format(symb
+ 
+ libmbim_glib = library(
+   libname,
+-  version: mbim_glib_version,
+   sources: version_header,
+   include_directories: top_inc,
+   dependencies: generated_dep,
+@@ -93,6 +88,7 @@ libmbim_glib = library(
+   link_depends: symbol_map,
+   link_whole: libmbim_glib_core,
+   install: true,
++  name_suffix: 'lib.so',
+ )
+ 
+ libmbim_glib_dep = declare_dependency(
+diff --git a/src/mbimcli/meson.build b/src/mbimcli/meson.build
+index ec006e6..ad96b37 100644
+--- a/src/mbimcli/meson.build
++++ b/src/mbimcli/meson.build
+@@ -68,4 +68,6 @@ if enable_bash_completion
+   )
+ endif
+ 
++install_headers('mbimcli.h', subdir: 'libmbim-glib')
++
+ subdir('tests')

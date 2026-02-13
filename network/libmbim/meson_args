@@ -1,0 +1,4 @@
+-Dintrospection=false
+-Dman=false
+-Dbash_completion=false
+-Db_lundef=false
