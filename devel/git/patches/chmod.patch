@@ -1,0 +1,34 @@
+chmod.patch
+
+diff --git a/config.c b/config.c
+index f1def0d..56f825d 100644
+--- a/config.c
++++ b/config.c
+@@ -3095,11 +3095,13 @@ int repo_config_set_multivar_in_file_gently(struct repository *r,
+ 		close(in_fd);
+ 		in_fd = -1;
+ 
++#if 0 /* chmod is not supported on Genode */
+ 		if (chmod(get_lock_file_path(&lock), st.st_mode & 07777) < 0) {
+ 			error_errno(_("chmod on %s failed"), get_lock_file_path(&lock));
+ 			ret = CONFIG_NO_WRITE;
+ 			goto out_free;
+ 		}
++#endif
+ 
+ 		if (store.seen_nr == 0) {
+ 			if (!store.seen_alloc) {
+@@ -3349,11 +3351,13 @@ static int repo_config_copy_or_rename_section_in_file(
+ 		goto out;
+ 	}
+ 
++#if 0 /* chmod is not supported on Genode */
+ 	if (chmod(get_lock_file_path(&lock), st.st_mode & 07777) < 0) {
+ 		ret = error_errno(_("chmod on %s failed"),
+ 				  get_lock_file_path(&lock));
+ 		goto out;
+ 	}
++#endif
+ 
+ 	while (!strbuf_getwholeline(&buf, config_file, '\n')) {
+ 		size_t i, length;

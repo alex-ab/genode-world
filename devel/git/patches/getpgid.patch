@@ -1,0 +1,20 @@
+getpgid.patch
+
+diff --git a/progress.c b/progress.c
+index 8315bdc..8d11051 100644
+--- a/progress.c
++++ b/progress.c
+@@ -106,7 +106,12 @@ static void clear_progress_signal(void)
+ static int is_foreground_fd(int fd)
+ {
+ 	int tpgrp = tcgetpgrp(fd);
+-	return tpgrp < 0 || tpgrp == getpgid(0);
++	/*
++	 * 'getpgid' is not provided by Genode's libc
++	 *
++	 * return tpgrp < 0 || tpgrp == getpgid(0);
++	 */
++	return tpgrp < 0;
+ }
+ 
+ static void display(struct progress *progress, uint64_t n, const char *done)

@@ -1,0 +1,26 @@
+pipe.patch
+
+diff --git a/builtin/index-pack.c b/builtin/index-pack.c
+index 2b78ba7..daf8579 100644
+--- a/builtin/index-pack.c
++++ b/builtin/index-pack.c
+@@ -1301,12 +1301,19 @@ static void parse_pack_objects(unsigned char *hash)
+ 		die(_("pack is corrupted (SHA1 mismatch)"));
+ 	use(the_hash_algo->rawsz);
+ 
++#if 0
++	/*
++	 * On Genode a pipe is currently classified as regular file
++	 * and the following check would fail.
++	 */
++
+ 	/* If input_fd is a file, we should have reached its end now. */
+ 	if (fstat(input_fd, &st))
+ 		die_errno(_("cannot fstat packfile"));
+ 	if (S_ISREG(st.st_mode) &&
+ 			lseek(input_fd, 0, SEEK_CUR) - input_len != st.st_size)
+ 		die(_("pack has junk at the end"));
++#endif
+ 
+ 	for (i = 0; i < nr_objects; i++) {
+ 		struct object_entry *obj = &objects[i];

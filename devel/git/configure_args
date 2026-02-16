@@ -1,0 +1,5 @@
+ac_cv_fread_reads_directories=no
+ac_cv_snprintf_returns_bogus=no
+ac_cv_lib_resolv_inet_ntop=yes
+ac_cv_lib_curl_curl_global_init=yes
+ac_cv_member_struct_stat_st_mtimespec_tv_nsec=no

@@ -1,0 +1,15 @@
+no_config_uname.patch
+
+diff --git a/Makefile b/Makefile
+index 7e0f77e..434fae3 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1028,7 +1028,7 @@ GIT-SPATCH-DEFINES: FORCE
+ 		echo "$$FLAGS" >GIT-SPATCH-DEFINES; \
+             fi
+ 
+-include config.mak.uname
++#include config.mak.uname
+ -include config.mak.autogen
+ -include config.mak
+ 

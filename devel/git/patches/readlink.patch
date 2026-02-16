@@ -1,0 +1,46 @@
+readlink.patch
+
+Check if a path is a symlink before calling 'readlink()' to reduce
+the amount of error messages with lx_fs.
+
+diff --git a/lockfile.c b/lockfile.c
+index 1d5ed01..c823205 100644
+--- a/lockfile.c
++++ b/lockfile.c
+@@ -53,6 +53,15 @@ static void resolve_symlink(struct strbuf *path)
+ 	static struct strbuf link = STRBUF_INIT;
+ 
+ 	while (depth--) {
++
++		struct stat st;
++
++		if (lstat(path->buf, &st) < 0)
++			break;
++
++		if (!S_ISLNK(st.st_mode))
++			break;
++
+ 		if (strbuf_readlink(&link, path->buf, path->len) < 0)
+ 			break;
+ 
+diff --git a/setup.c b/setup.c
+index 7086741..f82c42f 100644
+--- a/setup.c
++++ b/setup.c
+@@ -2268,11 +2268,14 @@ void initialize_repository_version(int hash_algo,
+ static int is_reinit(void)
+ {
+ 	struct strbuf buf = STRBUF_INIT;
++	struct stat st;
+ 	char junk[2];
+ 	int ret;
+-
+ 	repo_git_path_replace(the_repository, &buf, "HEAD");
+-	ret = !access(buf.buf, R_OK) || readlink(buf.buf, junk, sizeof(junk) - 1) != -1;
++	ret = !access(buf.buf, R_OK) ||
++	      ((stat(buf.buf, &st) == 0) &&
++	       S_ISLNK(st.st_mode) &&
++	       (readlink(buf.buf, junk, sizeof(junk) - 1) != -1));
+ 	strbuf_release(&buf);
+ 	return ret;
+ }

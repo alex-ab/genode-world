@@ -1,0 +1,5 @@
+genodelabs/api/curl
+genodelabs/api/libc
+genodelabs/api/openssl
+genodelabs/api/posix
+genodelabs/api/zlib

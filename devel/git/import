@@ -1,0 +1,15 @@
+LICENSE   := GPLv2
+VERSION   := 2.52.0
+DOWNLOADS := git.archive
+
+URL(git) := https://mirrors.edge.kernel.org/pub/software/scm/git/git-$(VERSION).tar.gz
+SHA(git) := 6880cb1e737e26f81cf7db9957ab2b5bb2aa1490d87619480b860816e0c10c32
+DIR(git) := src
+
+PATCHES := patches/getpgid.patch \
+           patches/no_config_uname.patch \
+           patches/chmod.patch \
+           patches/readlink.patch \
+           patches/pipe.patch
+
+PATCH_OPT := -p1 -d src
