@@ -1,91 +1,74 @@
-<runtime ram="10M" caps="600" binary="init">
+runtime | ram: 10M | caps: 600 | binary: init
++ requires
+  + file_system | label: keyboard
+  + gui
 
-	<requires>
-		<file_system label="keyboard"/>
-		<gui/>
-	</requires>
++ config
 
-	<config>
-		<parent-provides>
-			<service name="ROM"/>
-			<service name="PD"/>
-			<service name="RM"/>
-			<service name="CPU"/>
-			<service name="LOG"/>
-			<service name="Timer"/>
-			<service name="File_system"/>
-			<service name="Gui"/>
-		</parent-provides>
+  + parent-provides
+    + service ROM
+    + service PD
+    + service RM
+    + service CPU
+    + service LOG
+    + service Timer
+    + service File_system
+    + service Gui
 
-		<default-route> <any-service> <parent/> </any-service> </default-route>
-		<default caps="100"/>
+  + default-route
+    + any-service
+      + parent
 
-		<start name="rom_to_file" ram="2M">
-			<config rom="user.remap">
-				<vfs> <fs/> </vfs>
-			</config>
-			<route>
-				<service name="ROM" label="user.remap">
-					<child name="rom_filter"/>
-				</service>
-				<service name="File_system"> <parent identity="keyboard"/> </service>
-				<any-service> <parent/> </any-service>
-			</route>
-		</start>
+  + default | caps: 100
 
-		<start name="report" ram="1M">
-			<binary name="report_rom"/>
-			<provides> <service name="Report"/> <service name="ROM"/> </provides>
-			<config>
-				<policy label="rom_filter -> state" report="user_keys -> state" />
-			</config>
-		</start>
+  + start rom_to_file | ram: 2M
+    + config | rom: user.remap
+      + vfs | + fs
+    + route
+      + service ROM         | label: user.remap | + child rom_filter
+      + service File_system                     | + parent | identity: keyboard
+      + any-service                             | + parent
 
-		<start name="user_keys" ram="1M">
-			<binary name="global_keys_handler"/>
-			<route>
-				<service name="ROM" label="config">
-					<child name="fs_rom" label="user_keys.config"/>
-				</service>
-				<service name="Report"> <child name="report"/> </service>
-				<service name="Gui">    <parent/>              </service>
-				<service name="Timer">  <parent/>              </service>
-				<any-service> <parent/> </any-service>
-			</route>
-		</start>
+  + start report | ram: 1M
+    + binary report_rom
+    + provides
+      + service Report
+      + service ROM
+    + config
+      + policy | label: rom_filter -> state | report: user_keys -> state
 
-		<start name="rom_filter" ram="1M">
-			<provides> <service name="ROM" /> </provides>
-			<route>
-				<service name="ROM" label="config">
-					<child name="fs_rom" label="dynamic_remap.config"/>
-				</service>
-				<service name="ROM" unscoped_label="ld.lib.so"> <parent/> </service>
-				<service name="ROM" unscoped_label="rom_filter"> <parent/> </service>
-				<service name="ROM"> <child name="report"/> </service>
-				<any-service> <parent/> </any-service>
-			</route>
-		</start>
+  + start user_keys | ram: 1M
+    + binary global_keys_handler
+    + route
+      + service ROM    | label: config | + child fs_rom | label: user_keys.config
+      + service Report                 | + child report
+      + service Gui                    | + parent
+      + service Timer                  | + parent
+      + any-service                    | + parent
 
-		<start name="fs_rom" ram="2M">
-			<provides> <service name="ROM"/> </provides>
-			<route>
-				<service name="File_system"> <parent identity="keyboard"/> </service>
-				<any-service> <parent/> </any-service>
-			</route>
-		</start>
+  + start rom_filter | ram: 1M
+    + provides | + service ROM
+    + route
+      + service ROM | label: config              | + child fs_rom | label: dynamic_remap.config
+      + service ROM | unscoped_label: ld.lib.so  | + parent
+      + service ROM | unscoped_label: rom_filter | + parent
+      + service ROM                              | + child report
+      + any-service
+        + parent
 
-	</config>
+  + start fs_rom | ram: 2M
+    + provides | + service ROM
+    + route
+      + service File_system | + parent | identity: keyboard
+      + any-service         | + parent
 
-	<content>
-		<rom label="init"/>
-		<rom label="ld.lib.so"/>
-		<rom label="vfs.lib.so"/>
-		<rom label="rom_filter"/>
-		<rom label="global_keys_handler"/>
-		<rom label="report_rom"/>
-		<rom label="rom_to_file"/>
-		<rom label="fs_rom"/>
-	</content>
-
-</runtime>
++ content
+  + rom | label: init
+  + rom | label: ld.lib.so
+  + rom | label: vfs.lib.so
+  + rom | label: rom_filter
+  + rom | label: global_keys_handler
+  + rom | label: report_rom
+  + rom | label: rom_to_file
+  + rom | label: fs_rom
+-

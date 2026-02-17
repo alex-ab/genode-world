@@ -1,32 +1,28 @@
-<runtime ram="512M" caps="500" binary="speedtest">
-	<requires>
-		<timer/>
-		<rtc/>
-	</requires>
-	<config>
-		<libc stdout="/dev/log" stderr="/dev/log" rtc="/dev/rtc"/>
-		<vfs>
-			<ram/>
-			<dir name="dev">
-				<rtc/>
-				<log/>
-				<null/>
-			</dir>
-		</vfs>
-		<arg value="speedtest"/>
-		<arg value="--verify"/>
-		<arg value="test.db"/>
-	</config>
-	<content>
-		<!-- Components -->
-		<rom label="speedtest"/>
+runtime | ram: 512M | caps: 500 | binary: speedtest
++ requires
+  + timer
+  + rtc
 
-		<!-- Libraries -->
-		<rom label="ld.lib.so"/>
-		<rom label="libc.lib.so"/>
-		<rom label="libm.lib.so"/>
-		<rom label="vfs.lib.so"/>
-		<rom label="sqlite.lib.so"/>
-		<rom label="posix.lib.so"/>
-	</content>
-</runtime>
++ config
+| + arg | value: speedtest
+| + arg | value: --verify
+| + arg | value: test.db
+| + vfs
+|   + ram
+|   + dir dev
+|     + rtc
+|     + log
+|     + null
+| + libc | stdout: /dev/log | stderr: /dev/log | rtc: /dev/rtc
+
++ content
+  + rom | label: speedtest
+  . Components
+  + rom | label: ld.lib.so
+  . Libraries
+  + rom | label: libc.lib.so
+  + rom | label: libm.lib.so
+  + rom | label: vfs.lib.so
+  + rom | label: sqlite.lib.so
+  + rom | label: posix.lib.so
+-
