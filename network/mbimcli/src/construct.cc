@@ -102,6 +102,7 @@ class Mbim
 		unsigned    _backoff    { Mbim::BACKOFF_START };
 		guint32     _session_id { 0 };
 		Connection  _connection { };
+		GError     *_error      { nullptr };
 
 		Genode::Attached_rom_dataspace _config_rom   { _env, "config" };
 		Network                        _network      { };
@@ -120,11 +121,16 @@ class Mbim
 			GError *error         = nullptr;
 			MbimMessage *response = mbim_device_command_finish (_device, res, &error);
 
+			_error = nullptr;
+
 			if (!response ||
 			    !mbim_message_response_get_result(response, MBIM_MESSAGE_TYPE_COMMAND_DONE, &error)) {
-				if (may_fail) return nullptr;
-				Genode::error("operation failed: ", (char const*)error->message);
-				_shutdown(FALSE);
+
+				_error = error;
+
+				if (may_fail) return response;
+
+				Genode::warning("operation failed: ", error ? (char const*)error->message : "", " ", error ? error->code : 0);
 				return nullptr;
 			}
 
@@ -200,12 +206,12 @@ class Mbim
 						return;
 					}
 
-					mbim_device_command (_device,
-					                     request,
-					                     10,
-					                     nullptr,
-					                     (GAsyncReadyCallback)_pin_ready,
-					                     this);
+					mbim_device_command(_device,
+					                    request,
+					                    10,
+					                    nullptr,
+					                    (GAsyncReadyCallback)_pin_ready,
+					                    this);
 					break;
 
 				case PIN:
@@ -318,13 +324,6 @@ class Mbim
 			g_autoptr(GError)      error    = nullptr;
 			g_autoptr(MbimMessage) response = mbim->_command_response(res, true);
 
-			if (!response) {
-				Genode::log("PIN might be entered already");
-				mbim->_state = Mbim::PIN;
-				mbim->_send_request();
-				return;
-			}
-
 			MbimPinType  pin_type;
 			MbimPinState pin_state;
 			guint32      remaining_attempts;
@@ -341,7 +340,7 @@ class Mbim
 			mbim->_state_report.sim = mbim_pin_state_get_string(pin_state);
 			mbim->_report_state();
 
-			if (pin_state != MBIM_PIN_STATE_UNLOCKED) {
+			if (mbim->_error && mbim->_error->code == MBIM_STATUS_ERROR_FAILURE) {
 				Genode::error("Unable to unlock SIM card. Wrong PIN?"
 				              " Remaining attempts: ", remaining_attempts);
 				mbim->_shutdown(FALSE);
@@ -389,7 +388,7 @@ class Mbim
 				return;
 			}
 
-			if (ready_state != MBIM_SUBSCRIBER_READY_STATE_INITIALIZED) {
+			if (ready_state != MBIM_SUBSCRIBER_READY_STATE_INITIALIZED && mbim->_state == Mbim::NONE) {
 				Genode::error("subscriber not initialized: ",
 				              mbim_subscriber_ready_state_get_string(ready_state));
 				mbim->_shutdown (FALSE);
@@ -829,6 +828,7 @@ class Mbim
 						break;
 					}
 					case MBIM_CID_BASIC_CONNECT_PACKET_SERVICE:
+					case MBIM_CID_BASIC_CONNECT_CONNECT:
 						/* ignore */
 						break;
 					case MBIM_CID_BASIC_CONNECT_SUBSCRIBER_READY_STATUS:
