@@ -47,7 +47,7 @@ Net::Ipv4_address Net::Ipv4_address::from_uint32_little_endian(uint32_t ip_raw)
 
 class Mbim
 {
-	enum { TRACE = TRUE };
+	enum { TRACE = FALSE };
 
 	enum State { NONE, UNLOCK, PIN, QUERY, ATTACH, CONNECT, READY };
 
@@ -86,6 +86,9 @@ class Mbim
 		String data_class { };
 		String roaming    { };
 		Genode::uint32_t rssi       { 99 };
+		Genode::uint32_t rsrq       { 0  };
+		Genode::uint32_t rsrp       { 0  };
+		Genode::uint32_t rssnr      { 0  };
 		Genode::uint32_t error_rate { 99 };
 	};
 
@@ -698,6 +701,32 @@ class Mbim
 			}
 		}
 
+		static void _signal_state(GObject *, GAsyncResult *res, gpointer user_data)
+		{
+			Mbim *mbim = _mbim(user_data);
+			GError *error                   = nullptr;
+			g_autoptr(MbimMessage) response = mbim->_command_response(res);
+
+			if (!response ||
+			    !mbim_message_response_get_result(response,
+			                                      MBIM_MESSAGE_TYPE_COMMAND_DONE,
+			                                      &error)) {
+				mbim->_report_state();
+				return;
+			}
+
+			mbim_message_atds_signal_response_parse(response,
+			                                        nullptr, /* rssi */
+			                                        nullptr, /* error_rate */
+			                                        nullptr, /* rscp */
+			                                        nullptr, /* ecno */
+			                                        &mbim->_state_report.rsrq,
+			                                        &mbim->_state_report.rsrp,
+			                                        &mbim->_state_report.rssnr,
+			                                        &error);
+			mbim->_report_state();
+		}
+
 		static void _log_handler(const gchar *,
 		                         GLogLevelFlags log_level,
 		                         const gchar *message,
@@ -784,7 +813,17 @@ class Mbim
 							}
 						}
 
-						mbim->_report_state();
+						{
+							/* retrieve signal states from AT&T device service */
+							g_autoptr(MbimMessage) request = nullptr;
+							request = (mbim_message_atds_signal_query_new(nullptr));
+							mbim_device_command(mbim->_device,
+							                    request,
+							                    10,
+							                    nullptr,
+							                    (GAsyncReadyCallback)_signal_state,
+							                    mbim);
+						}
 						break;
 
 					case MBIM_CID_BASIC_CONNECT_REGISTER_STATE:
@@ -920,6 +959,9 @@ class Mbim
 						else
 							g.attribute("rssi_dbm", String("-", 113-2*_state_report.rssi));
 
+						g.attribute("rsrq_db",    -19.5f + ((float)_state_report.rsrq/2));
+						g.attribute("rsrp_dbm",   -140l + _state_report.rsrp);
+						g.attribute("rssnr_db",   -5l + _state_report.rssnr);
 						g.attribute("error_rate", _state_report.error_rate);
 						
 					});
