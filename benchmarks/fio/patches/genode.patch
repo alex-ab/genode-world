@@ -39,7 +39,7 @@
  CONFIGURE_CFLAGS="-Werror-implicit-function-declaration"
  BUILD_CFLAGS=""
  
-@@ -211,8 +211,12 @@
+@@ -211,8 +211,10 @@
    ;;
    --cc=*) CC="$optarg"
    ;;
@@ -47,8 +47,6 @@
 +  ;;
    --extra-cflags=*) CFLAGS="$CFLAGS $optarg"
    ;;
-+  --extra-libs=*) LIBS="$LIBS $optarg"
-+  ;;
    --build-32bit-win) build_32bit_win="yes"
    ;;
    --target-win-ver=*) target_win_ver="$optarg"
@@ -70,6 +68,19 @@
      posix_aio_fsync=yes
    fi
  fi
+@@ -839,9 +839,9 @@
+   return 0;
+ }
+ EOF
+-if compile_prog "" "$LIBS" "posix_pshared" ; then
+-  posix_pshared=yes
+-fi
++# if compile_prog "" "$LIBS" "posix_pshared" ; then
++#   posix_pshared=yes
++# fi
+ print_config "POSIX pshared support" "$posix_pshared"
+ 
+ ##########################################
 --- src/fio/engines/posixaio.c
 +++ src/fio/engines/posixaio.c
 @@ -85,6 +85,9 @@
