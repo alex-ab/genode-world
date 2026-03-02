@@ -1,4 +1,5 @@
 _/api/base
+_/api/broadband-util
 _/api/os
 _/api/libc
 _/api/net

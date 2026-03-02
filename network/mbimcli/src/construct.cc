@@ -33,17 +33,11 @@ extern "C" {
 #include <mbimcli.h>
 }
 
-/* is in library archive */
-Net::Ipv4_address Net::Ipv4_address::from_uint32_little_endian(uint32_t ip_raw)
-{
-	Net::Ipv4_address ip;
-	ip.addr[3] = (uint8_t)(ip_raw);
-	ip.addr[2] = (uint8_t)(ip_raw >> 8);
-	ip.addr[1] = (uint8_t)(ip_raw >> 16);
-	ip.addr[0] = (uint8_t)(ip_raw >> 24);
-	return ip;
-}
+#include <broadband.h>
 
+
+using namespace Genode;
+using namespace Broadband;
 
 class Mbim
 {
@@ -57,46 +51,22 @@ class Mbim
 		RSSI_DISCONNECT = 31,
 	};
 
-	using String  = Genode::String<32>;
-	using Cstring = Genode::Cstring;
-
-	struct Connection
-	{
-		Net::Ipv4_address ip;
-		Genode::uint32_t  mask;
-		Net::Ipv4_address gateway;
-		Net::Ipv4_address dns[2];
-		bool              connected;
-	};
-
-	struct Network
-	{
-		String apn;
-		String user;
-		String password;
-		String pin;
-	};
-
-	struct State_report
-	{
-		String sim        { };
-		String error      { };
-		String network    { };
-		String provider   { };
-		String data_class { };
-		String roaming    { };
-		Genode::uint32_t rssi       { 99 };
-		Genode::uint32_t rsrq       { 0  };
-		Genode::uint32_t rsrp       { 0  };
-		Genode::uint32_t rssnr      { 0  };
-		Genode::uint32_t error_rate { 99 };
-	};
+	using String       = Genode::String<32>;
+	using Cstring      = Genode::Cstring;
+	using Connection   = Broadband::Connection;
+	using State_report = Broadband::State;
 
 	private:
 
-		Genode::Env      &_env;
-		Genode::Reporter  _config_reporter { _env, "config", "nic_router.config" };
-		Genode::Reporter  _state_reporter  { _env, "state",  "state" };
+		Env      &_env;
+
+		Reporter  _config_reporter { _env, "config", "nic_router.config" };
+		Reporter  _state_reporter  { _env, "state",  "state" };
+
+		Attached_rom_dataspace _config_rom   { _env, "config" };
+
+		Config_reporter _broadband_config { _config_reporter, _config_rom };
+		State_reporter  _broadband_state  { _state_reporter };
 
 		State       _state      { NONE };
 		GMainLoop  *_loop       { nullptr };
@@ -107,11 +77,11 @@ class Mbim
 		Connection  _connection { };
 		GError     *_error      { nullptr };
 
-		Genode::Attached_rom_dataspace _config_rom   { _env, "config" };
-		Network                        _network      { };
-		State_report                   _state_report { };
+		Network      _network      { };
+		State_report _state_report { };
+		bool         _report_atds  { true };
 
-		Genode::Signal_handler<Mbim> _config_handler {
+		Signal_handler<Mbim> _config_handler {
 			_env.ep(), *this, &Mbim::_report_config };
 
 		static Mbim *_mbim(gpointer user_data)
@@ -133,7 +103,7 @@ class Mbim
 
 				if (may_fail) return response;
 
-				Genode::warning("operation failed: ", error ? (char const*)error->message : "", " ", error ? error->code : 0);
+				warning("operation failed: ", error ? (char const*)error->message : "", " ", error ? error->code : 0);
 				return nullptr;
 			}
 
@@ -343,7 +313,8 @@ class Mbim
 			mbim->_state_report.sim = mbim_pin_state_get_string(pin_state);
 			mbim->_report_state();
 
-			if (mbim->_error && mbim->_error->code == MBIM_STATUS_ERROR_FAILURE) {
+			if (mbim->_error && mbim->_error->code == MBIM_STATUS_ERROR_FAILURE &&
+			    pin_state != MBIM_PIN_STATE_UNLOCKED) {
 				Genode::error("Unable to unlock SIM card. Wrong PIN?"
 				              " Remaining attempts: ", remaining_attempts);
 				mbim->_shutdown(FALSE);
@@ -351,7 +322,7 @@ class Mbim
 			}
 
 			if (TRACE)
-				Genode::log("PIN: state: ", mbim_pin_state_get_string(pin_state),
+				log("PIN: state: ", mbim_pin_state_get_string(pin_state),
 				            " remaining attempts: ", remaining_attempts);
 
 			mbim->_state = Mbim::PIN;
@@ -447,8 +418,8 @@ class Mbim
 			if (register_state == MBIM_REGISTER_STATE_HOME ||
 			    register_state == MBIM_REGISTER_STATE_ROAMING ||
 			    register_state == MBIM_REGISTER_STATE_PARTNER) {
-				/* check our state to allow polling registered state periodically 
- 				 * even if we're already connected */
+				/* check our state to allow polling registered state periodically
+				 * even if we're already connected */
 				if (mbim->_state == Mbim::PIN) {
 					mbim->_state = Mbim::QUERY;
 					mbim->_retry = 0;
@@ -462,7 +433,7 @@ class Mbim
 			}
 
 			if ((++mbim->_retry) % 10 == 0)
-				Genode::warning("Device not registered after ", mbim->_retry, " tries");
+				warning("Device not registered after ", mbim->_retry, " tries");
 
 			/*
 			 * We delay request retries to leave device time for network
@@ -517,13 +488,13 @@ class Mbim
 			mbim->_state = Mbim::ATTACH;
 
 			highest_available_data_class_str = mbim_data_class_build_string_from_mask (highest_available_data_class);
-			Genode::log("Successfully attached packet service");
+			log("Successfully attached packet service");
 
 			if (TRACE)
-				Genode::log("Packet service status:\n",
-				            "\tAvailable data classes: '", (char const *)highest_available_data_class_str, "'\n",
-				            "\t          Uplink speed: '", uplink_speed, "'\n",
-				            "\t        Downlink speed: '", downlink_speed, "'");
+				log("Packet service status:\n",
+				    "\tAvailable data classes: '", (char const *)highest_available_data_class_str, "'\n",
+				    "\t          Uplink speed: '", uplink_speed, "'\n",
+				    "\t        Downlink speed: '", downlink_speed, "'");
 
 			mbim->_send_request();
 		}
@@ -615,23 +586,15 @@ class Mbim
 			}
 
 			Net::Ipv4_address address { ipv4address[0]->ipv4_address.addr };
-
-			Genode::uint32_t netmask_lower = 32 - ipv4address[0]->on_link_prefix_length;
-			Genode::uint32_t netmask = ~0u;
-			for (Genode::uint32_t i = 0; i < netmask_lower; i++) {
-				netmask ^= (1 << i);
-			}
-
-			Net::Ipv4_address mask { Net::Ipv4_address::from_uint32_little_endian(netmask) };
 			Net::Ipv4_address gateway { (void *)ipv4gateway->addr };
-			Genode::log("ip     : ", address);
-			Genode::log("mask   : ", mask);
-			Genode::log("gateway: ", gateway);
+
+			log("ip     : ",  address, "/", ipv4address[0]->on_link_prefix_length);
+			log("gateway: ",  gateway);
 
 			Net::Ipv4_address dns[2];
-			for (Genode::uint32_t i = 0; i < ipv4dnsservercount && i < 2; i++) {
+			for (uint32_t i = 0; i < ipv4dnsservercount && i < 2; i++) {
 				dns[i] = Net::Ipv4_address { (void *)ipv4dnsserver[i].addr };
-				Genode::log("dns", i, "   : ", dns[i]);
+				log("dns", i, "   : ", dns[i]);
 			}
 
 			mbim->_connection.ip        = address;
@@ -687,7 +650,7 @@ class Mbim
 
 			if (!mbim_device_is_open(mbim->_device)) {
 				if (TRACE)
-					Genode::log("opening device");
+					log("opening device");
 				mbim_device_open_full(mbim->_device,
 				                      open_flags,
 				                      45,
@@ -705,7 +668,17 @@ class Mbim
 		{
 			Mbim *mbim = _mbim(user_data);
 			GError *error                   = nullptr;
-			g_autoptr(MbimMessage) response = mbim->_command_response(res);
+			g_autoptr(MbimMessage) response = mbim_device_command_finish(mbim->_device,
+			                                                             res,
+			                                                             &error);
+
+			/* disable signal state report on timeout error -> not supported */
+			if (error &&
+			    g_error_matches(error, MBIM_CORE_ERROR, MBIM_CORE_ERROR_TIMEOUT)) {
+				mbim->_report_atds = false;
+				mbim->_report_state();
+				return;
+			}
 
 			if (!response ||
 			    !mbim_message_response_get_result(response,
@@ -715,15 +688,22 @@ class Mbim
 				return;
 			}
 
+			uint32_t rsrq, rsrp, rssnr;
+
 			mbim_message_atds_signal_response_parse(response,
 			                                        nullptr, /* rssi */
 			                                        nullptr, /* error_rate */
 			                                        nullptr, /* rscp */
 			                                        nullptr, /* ecno */
-			                                        &mbim->_state_report.rsrq,
-			                                        &mbim->_state_report.rsrp,
-			                                        &mbim->_state_report.rssnr,
+			                                        &rsrq,
+			                                        &rsrp,
+			                                        &rssnr,
 			                                        &error);
+
+			mbim->_state_report.rsrq  = -19.5f + ((float)rsrq/2);
+			mbim->_state_report.rsrp  = -140l + rsrp;
+			mbim->_state_report.rssnr = -5.0f + rssnr;
+
 			mbim->_report_state();
 		}
 
@@ -732,7 +712,7 @@ class Mbim
 		                         const gchar *message,
 		                         gpointer)
 		{
-			Genode::String<32> level;
+			String level;
 			switch (log_level) {
 				case G_LOG_LEVEL_WARNING:
 					level = "[Warning]";
@@ -755,7 +735,7 @@ class Mbim
 					g_assert_not_reached ();
 			}
 
-				Genode::log(level, " ", message);
+				log(level, " ", message);
 		}
 
 		void _init()
@@ -785,10 +765,11 @@ class Mbim
 			if (service == MBIM_SERVICE_BASIC_CONNECT) {
 				switch(cid) {
 
-					case MBIM_CID_BASIC_CONNECT_SIGNAL_STATE:
+					case MBIM_CID_BASIC_CONNECT_SIGNAL_STATE: {
+						uint32_t rssi;
 						if (!mbim_message_signal_state_notification_parse(msg,
-						                                                  &mbim->_state_report.rssi,
-						                                                  &mbim->_state_report.error_rate,
+						                                                  &rssi,
+						                                                  nullptr,
 						                                                  nullptr,
 						                                                  nullptr,
 						                                                  nullptr,
@@ -798,8 +779,10 @@ class Mbim
 							return;
 						}
 
+						mbim->_state_report.rssi = -113l-2*rssi;
+
 						/* handle RSSI connection-state change */
-						if (mbim->_state_report.rssi > RSSI_DISCONNECT) {
+						if (rssi > RSSI_DISCONNECT) {
 							if (mbim->_connection.connected) {
 								mbim->_connection.connected = false;
 								mbim->_report_config();
@@ -814,6 +797,11 @@ class Mbim
 						}
 
 						{
+							if (mbim->_state != READY || !mbim->_report_atds) {
+								mbim->_report_state();
+								break;
+							}
+
 							/* retrieve signal states from AT&T device service */
 							g_autoptr(MbimMessage) request = nullptr;
 							request = (mbim_message_atds_signal_query_new(nullptr));
@@ -825,7 +813,7 @@ class Mbim
 							                    mbim);
 						}
 						break;
-
+					}
 					case MBIM_CID_BASIC_CONNECT_REGISTER_STATE:
 					{
 						MbimNwError          nw_error;
@@ -861,7 +849,7 @@ class Mbim
 						if (register_state != MBIM_REGISTER_STATE_HOME &&
 						    register_state != MBIM_REGISTER_STATE_ROAMING &&
 						    register_state != MBIM_REGISTER_STATE_PARTNER) {
-							Genode::warning("Lost network registration");
+							warning("Lost network registration");
 						}
 
 						break;
@@ -913,8 +901,8 @@ class Mbim
 					default:
 						const gchar *cid_printable = mbim_cid_get_printable(mbim_message_indicate_status_get_service (msg),
 						                                                    mbim_message_indicate_status_get_cid (msg));
-						Genode::warning("Received unknown status message with cid: ", cid_printable);
-						Genode::warning(Genode::Cstring(mbim_message_get_printable(msg, "  ", FALSE)));
+						warning("Received unknown status message with cid: ", cid_printable);
+						warning(Cstring(mbim_message_get_printable(msg, "  ", FALSE)));
 				}
 			}
 		}
@@ -924,7 +912,7 @@ class Mbim
 		{
 			Mbim *mbim = _mbim(user_data);
 
-			Genode::warning("Device hung-up. Reconnecting...");
+			warning("Device hung-up. Reconnecting...");
 			mbim->_state = Mbim::PIN;
 			mbim->_send_request();
 		}
@@ -938,36 +926,7 @@ class Mbim
 
 		void _report_state()
 		{
-			_state_reporter.enabled(true);
-			try {
-				(void)_state_reporter.generate([&] (Genode::Generator &g) {
-					g.node("device", [&] () {
-						g.attribute("sim", _state_report.sim);
-					});
-
-					g.node("network", [&] () {
-						g.attribute("error",      _state_report.error);
-						g.attribute("registered", _state_report.network);
-						g.attribute("provider",   _state_report.provider);
-						g.attribute("data_class", _state_report.data_class);
-						g.attribute("roaming",    _state_report.roaming);
-					});
-
-					g.node("signal", [&] () {
-						if (_state_report.rssi > RSSI_DISCONNECT)
-							g.attribute("rssi_dbm", "unknown");
-						else
-							g.attribute("rssi_dbm", String("-", 113-2*_state_report.rssi));
-
-						g.attribute("rsrq_db",    -19.5f + ((float)_state_report.rsrq/2));
-						g.attribute("rsrp_dbm",   -140l + _state_report.rsrp);
-						g.attribute("rssnr_db",   -5l + _state_report.rssnr);
-						g.attribute("error_rate", _state_report.error_rate);
-						
-					});
-				});
-			}
-			catch (...) { Genode::warning("Could not report state."); }
+			_broadband_state.report(_state_report);
 		}
 
 		void _report_config()
@@ -975,150 +934,7 @@ class Mbim
 			if (_state != Mbim::READY)
 				return;
 
-			/* handle intermediate disconnect */
-			if (!_connection.connected) {
-				_config_reporter.enabled(true);
-				(void)_config_reporter.generate([&] (Genode::Generator &g) {
-					g.attribute("verbose", "no");
-					g.attribute("verbose_packets", "no");
-					g.attribute("verbose_domain_state", "yes");
-				});
-				return;
-			}
-
-			String interface = "10.0.1.1/24";
-			String ip_first  = "10.0.1.2";
-			String ip_last   = "10.0.1.200";
-
-			_config_rom.node().with_optional_sub_node("default-domain",
-				[&] (Genode::Node const &net) {
-					interface = net.attribute_value("interface", interface);
-					ip_first  = net.attribute_value("ip_first",  ip_first);
-					ip_last   = net.attribute_value("ip_first",  ip_last);
-				});
-
-			_config_reporter.enabled(true);
-			_config_reporter.generate([&] (Genode::Generator &g) {
-				g.attribute("verbose", "no");
-				g.attribute("verbose_packets", "no");
-				g.attribute("verbose_domain_state", "yes");
-
-					g.node("default-policy", [&] () {
-						g.attribute("domain", "default");
-					});
-
-					g.node("policy", [&] () {
-						g.attribute("label_prefix", "usb_net");
-						g.attribute("domain", "uplink");
-					});
-
-					/* uplink */
-					g.node("domain", [&] () {
-						g.attribute("name", "uplink");
-						Genode::String<18> ip { _connection.ip, "/", _connection.mask };
-						g.attribute("interface", ip);
-						Genode::String<15> gw { _connection.gateway };
-						g.attribute("gateway", gw);
-						/* no ARP */
-						g.attribute("use_arp", "no");
-
-						g.node("nat", [&] () {
-							g.attribute("domain", "default");
-							g.attribute("tcp-ports", "1000");
-							g.attribute("udp-ports", "1000");
-							g.attribute("icmp-ids", "1000");
-						});
-						if (_config_rom.node().attribute_value("nic_client_enable", false)) {
-							g.node("nat", [&] () {
-								g.attribute("domain", "downlink");
-								g.attribute("tcp-ports", "1000");
-								g.attribute("udp-ports", "1000");
-								g.attribute("icmp-ids", "1000");
-							});
-						}
-					});
-
-					/* link to another nic_router */
-					if (_config_rom.node().attribute_value("nic_client_enable", false)) {
-						g.node("nic-client", [&] () {
-							g.attribute("domain", "downlink");
-						});
-						g.node("domain", [&] () {
-							g.attribute("name", "downlink");
-
-							g.attribute("interface", "10.0.2.1/24");
-
-							g.node("dhcp-server", [&] () {
-								g.attribute("ip_first", "10.0.2.2");
-								g.attribute("ip_last",  "10.0.2.3");
-
-								g.node("dns-server", [&] () {
-									g.attribute("ip", Genode::String<15>(_connection.dns[0]));
-								});
-
-								g.node("dns-server", [&] () {
-									g.attribute("ip", Genode::String<15>(_connection.dns[1]));
-								});
-							});
-
-							g.node("tcp", [&] () {
-								g.attribute("dst", "0.0.0.0/0");
-								g.node("permit-any", [&] () {
-									g.attribute("domain", "uplink");
-								});
-							});
-							g.node("udp", [&] () {
-								g.attribute("dst", "0.0.0.0/0");
-								g.node("permit-any", [&] () {
-									g.attribute("domain", "uplink");
-								});
-							});
-							g.node("icmp", [&] () {
-								g.attribute("dst", "0.0.0.0/0");
-								g.attribute("domain", "uplink");
-							});
-						});
-					}
-
-					/* default */
-					g.node("domain", [&] () {
-						g.attribute("name", "default");
-
-						g.attribute("interface", interface);
-
-						g.node("dhcp-server", [&] () {
-							g.attribute("ip_first", ip_first);
-							g.attribute("ip_last",  ip_last);
-
-							g.node("dns-server", [&] () {
-								g.attribute("ip", Genode::String<15>(_connection.dns[0]));
-							});
-
-							g.node("dns-server", [&] () {
-								g.attribute("ip", Genode::String<15>(_connection.dns[1]));
-							});
-						});
-
-						g.node("tcp", [&] () {
-							g.attribute("dst", "0.0.0.0/0");
-							g.node("permit-any", [&] () {
-								g.attribute("domain", "uplink");
-							});
-						});
-						g.node("udp", [&] () {
-							g.attribute("dst", "0.0.0.0/0");
-							g.node("permit-any", [&] () {
-								g.attribute("domain", "uplink");
-							});
-						});
-						g.node("icmp", [&] () {
-							g.attribute("dst", "0.0.0.0/0");
-							g.attribute("domain", "uplink");
-						});
-					});
-				}).with_error([] (Genode::Buffer_error) {
-					Genode::warning("Could not report NIC router configuration");
-				});
+			_broadband_config.report(_connection);
 		}
 
 	public:
@@ -1126,7 +942,7 @@ class Mbim
 		Mbim(Libc::Env &env) : _env(env)
 		{
 			_config_rom.node().with_sub_node("network",
-				[&] (Genode::Node const &net) {
+				[&] (Node const &net) {
 					_network.apn      = net.attribute_value("apn", String());
 					_network.user     = net.attribute_value("user", String());
 					_network.password = net.attribute_value("password", String());
@@ -1138,7 +954,6 @@ class Mbim
 
 			_init();
 			_connect();
-			exit(0);
 		}
 
 		Mbim(Mbim const &) = delete;
@@ -1151,4 +966,6 @@ void Libc::Component::construct(Libc::Env &env)
 	Libc::with_libc([&] () {
 		static Mbim main { env };
 	});
+
+	exit(0);
 }
