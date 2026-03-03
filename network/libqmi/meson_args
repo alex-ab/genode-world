@@ -1,0 +1,10 @@
+-Dfirmware_update=false
+-Dmbim_qmux=false
+-Dmm_runtime_check=false
+-Dqrtr=false
+-Drmnet=false
+-Dudev=false
+-Dintrospection=false
+-Dman=false
+-Dbash_completion=false
+-Db_lundef=false

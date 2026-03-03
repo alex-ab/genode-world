@@ -1,0 +1,77 @@
+diff --git a/meson.build b/meson.build
+index d9d43c2..a602175 100644
+--- a/meson.build
++++ b/meson.build
+@@ -124,7 +124,7 @@ no_deprecated_declarations_flags = cc.get_supported_arguments('-Wno-deprecated-d
+ 
+ glib_version = '2.56'
+ 
+-glib_dep = dependency('glib-2.0', version: '>= ' + glib_version)
++glib_dep = dependency('glib-2.0')
+ gio_unix_dep = dependency('gio-unix-2.0')
+ 
+ deps = [
+@@ -241,7 +241,6 @@ test_env = {
+ }
+ 
+ subdir('src')
+-subdir('utils')
+ subdir('examples/simple-tester-c')
+ 
+ enable_gtk_doc = get_option('gtk_doc')
+diff --git a/src/libqmi-glib/meson.build b/src/libqmi-glib/meson.build
+index f186599..591294e 100644
+--- a/src/libqmi-glib/meson.build
++++ b/src/libqmi-glib/meson.build
+@@ -78,7 +78,7 @@ libqmi_glib_compat = static_library(
+   c_args: common_c_flags + no_deprecated_declarations_flags,
+ )
+ 
+-libname = 'qmi-glib'
++libname = 'qmi'
+ 
+ sources = files(
+   'qmi-client.c',
+@@ -120,13 +120,13 @@ endif
+ 
+ libqmi_glib = library(
+   libname,
+-  version: qmi_glib_version,
+   sources: sources + [version_header],
+   include_directories: top_inc,
+   dependencies: deps,
+   c_args: common_c_flags + ['-DLIBEXEC_PATH="@0@"'.format(qmi_prefix / qmi_libexecdir)],
+   link_whole: [libqmi_glib_compat, libqmi_glib_generated],
+   install: true,
++  name_suffix: 'lib.so',
+ )
+ 
+ libqmi_glib_dep = declare_dependency(
+diff --git a/src/libqmi-glib/qmi-message.c b/src/libqmi-glib/qmi-message.c
+index 4cb048a..7a0475b 100644
+--- a/src/libqmi-glib/qmi-message.c
++++ b/src/libqmi-glib/qmi-message.c
+@@ -32,7 +32,7 @@
+ #include <stdint.h>
+ #include <stdio.h>
+ #include <string.h>
+-#include <endian.h>
++#include <sys/endian.h>
+ 
+ #include "qmi-common.h"
+ #include "qmi-message.h"
+diff --git a/src/qmicli/qmicli-wds.c b/src/qmicli/qmicli-wds.c
+index 0bae3b4..5b5b786 100644
+--- a/src/qmicli/qmicli-wds.c
++++ b/src/qmicli/qmicli-wds.c
+@@ -35,6 +35,10 @@
+ #include "qmicli.h"
+ #include "qmicli-helpers.h"
+ 
++#include <sys/socket.h>
++#include <netinet/in.h>
++#define s6_addr16 __u6_addr.__u6_addr16
++
+ #if defined HAVE_QMI_SERVICE_WDS
+ 
+ #undef VALIDATE_MASK_NONE

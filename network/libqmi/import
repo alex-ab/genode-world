@@ -1,0 +1,11 @@
+LICENSE   := LGPL-2.1
+VERSION   := 1.38.0
+DOWNLOADS := libqmi.archive
+
+URL(libqmi) := https://gitlab.freedesktop.org/mobile-broadband/libqmi/-/archive/$(VERSION)/libqmi-$(VERSION).tar.gz
+DIR(libqmi) := src
+SHA(libqmi) := 8ee3b3a9002f2b45c825deade85710db006e01674f5f9359d351c192cc926015
+
+PATCHES   := patches/meson_build.patch
+PATCH_OPT := -p1 -d src
+
