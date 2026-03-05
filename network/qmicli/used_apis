@@ -1,0 +1,9 @@
+_/api/base
+_/api/broadband-util
+_/api/os
+_/api/libc
+_/api/net
+_/api/glib
+_/api/libqmi
+_/api/report_session
+_/api/stdcxx
