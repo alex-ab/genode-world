@@ -59,7 +59,9 @@ runtime | ram: 46M | caps: 1000 | binary: init
 
   + start usb_net | caps: 200 | ram: 16M
     + provides | + service Terminal
-    + config | mac: 02:00:00:00:01:01 | mode: uplink_client
+    + config
+    | + device | vendor_id: 0x12d1 | product_id: 0x15c1 | configuration: 3
+    |   . MBIM config profile is 3 for Huawei ME906e, 0 lets Linux driver choose config
     + route
       + service Uplink | + child nic_router
       + any-service    | + parent
