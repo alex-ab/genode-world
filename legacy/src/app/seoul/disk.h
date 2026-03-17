@@ -144,7 +144,7 @@ class Seoul::Disk : public StaticReceiver<Seoul::Disk>
 
 	public:
 
-		static constexpr unsigned block_packetstream_size = 4*512*1024;
+		static constexpr unsigned block_packetstream_size = (4u << 20) + (64 << 10);
 
 		Disk(Genode::Env &, Motherboard &, char *, Genode::size_t);
 
