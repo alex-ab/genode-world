@@ -18,6 +18,8 @@ if {[have_cmd_switch --autopilot]} {
 
 set use_drv_ahci  [expr  $use_ahci && ($use_block_vdi || $use_block_sata)]
 set use_drv_nvme  [expr !$use_ahci && ($use_block_vdi || $use_block_sata)]
+set use_drv_ahci 1
+set use_drv_nvme 1
 
 if {![info exists use_vfs_block]} {
 	set use_vfs_block [expr $use_block_ram || $use_genode_iso] }
@@ -92,16 +94,19 @@ if {[have_include power_on/qemu] && $use_block_sata} {
 		append qemu_args " -drive id=disk,file=bin/$image,format=raw,if=none"
 		append qemu_args " -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0"
 
-		if { $use_disk_count > 1 } {
-			append qemu_args " -drive id=hdd,file=bin/$image2,format=raw,if=none"
-			append qemu_args " -device ide-hd,drive=hdd,bus=ahci.1 "
-		}
+#		if { $use_disk_count > 1 } {
+#			append qemu_args " -drive id=hdd,file=bin/$image2,format=raw,if=none"
+#			append qemu_args " -device ide-hd,drive=hdd,bus=ahci.1 "
+#		}
 	}
 
 	if {$use_drv_nvme} {
 		append qemu_args " -device pcie-root-port,id=root_port1 "
-		append qemu_args " -drive id=nvme0,file=bin/$image,format=raw,if=none "
+		append qemu_args " -drive id=nvme0,file=bin/$image2,format=raw,if=none "
 		append qemu_args " -device nvme,drive=nvme0,serial=fnord,id=nvme0n1,bus=root_port1 "
+
+			append qemu_args " -drive id=hdd,file=bin/$image3,format=raw,if=none"
+			append qemu_args " -device ide-hd,drive=hdd,bus=ahci.2 "
 	}
 
 }
@@ -127,7 +132,8 @@ proc config_ahci { } {
 
 	append_if [expr $use_block_sata && !$use_part_block] config_ahci {
 			<policy label="seoul -> disk0" device="0" writeable="yes"/>
-			<policy label="seoul -> disk1" device="1" writeable="yes"/>}
+			<policy label="seoul -> disk1" device="1" writeable="yes"/>
+			<policy label="seoul -> disk2" device="2" writeable="yes"/>}
 
 	append_if [expr $use_block_vdi && !$use_part_block] config_ahci {
 			<policy label="rump_fs -> " device="0" writeable="yes"/>}
@@ -136,7 +142,9 @@ proc config_ahci { } {
 			<policy label_prefix="part_block -> " device="0" writeable="yes"/>}
 
 	append_if [expr $use_block_sata && $use_part_block] config_ahci {
-			<policy label_prefix="part_block -> " device="0" writeable="yes"/>}
+			<policy label="seoul -> disk0" device="0" writeable="yes"/>
+			<policy label_prefix="part_block -> " device="1" writeable="yes"/>
+			<policy label="seoul -> disk2" device="2" writeable="yes"/>}
 
 	append config_ahci {
 		</config>
@@ -166,7 +174,8 @@ proc config_nvme { } {
 		<config max_hmb_size="16M" verbose_regs="yes" verbose_identify="yes">}
 
 	append_if [expr $use_block_sata && !$use_part_block] config_nvme {
-			<policy label="seoul -> disk0" writeable="yes"/>}
+			<policy label="seoul -> disk0" writeable="yes"/>
+			<policy label="seoul -> disk1" writeable="yes"/>}
 
 	append_if [expr $use_block_vdi && !$use_part_block] config_nvme {
 			<policy label="rump_fs -> "    writeable="yes"/>}
@@ -214,8 +223,8 @@ proc config_part_block { } {
 	if {!$use_fs_rump} { set partition_rump 10000 }
 	if { $use_fs_rump} { set partition_raw  10000 }
 
-	if {$use_drv_nvme} { set drv_name "nvme" }
 	if {$use_drv_ahci} { set drv_name "ahci" }
+	if {$use_drv_nvme} { set drv_name "nvme" }
 
 	append config_part_block {
 
@@ -228,7 +237,7 @@ proc config_part_block { } {
 		<config>}
 
 	append_if [expr !$use_fs_rump] config_part_block {
-			<policy label="seoul -> disk0" partition="} $partition_raw  {" writeable="yes"/>}
+			<policy label="seoul -> disk1" partition="} $partition_raw  {" writeable="yes"/>}
 
 	append_if [expr  $use_fs_rump] config_part_block {
 			<policy label="rump_fs -> "    partition="} $partition_rump {" writeable="yes"/>}
@@ -253,6 +262,8 @@ if {[have_spec sel4]} {
 
 
 set build_components {
+	driver/ahci
+	driver/nvme
 	driver/rtc
 	app/seoul
 	server/record_play_mixer
@@ -336,6 +347,11 @@ if {!$use_multiboot} {
 		if {$use_disk_count > 1} {
 			puts $vm_cfg_fd {
 				<drive sigma0drive="1" controller="0" port="1"/>
+			}
+		}
+		if {$use_disk_count > 2} {
+			puts $vm_cfg_fd {
+				<drive sigma0drive="2" controller="0" port="2"/>
 			}
 		}
 	}
@@ -711,7 +727,13 @@ append_if [expr  $use_block_vdi && !$use_vfs_block] config {
 append_if [expr !$use_block_vdi &&  $use_vfs_block] config {
 			<service name="Block"><child name="vfs_block"/></service>}
 append_if [expr !$use_block_vdi && !$use_vfs_block && $use_block_sata && $use_part_block] config {
-			<service name="Block"><child name="part_block"/></service>}
+			<service name="Block" label="disk0"> <child name="ahci"/></service>
+			<service name="Block" label="disk1"> <child name="part_block"/></service>
+			<service name="Block" label="disk2"> <child name="ahci"/></service>}
+append_if [expr !$use_block_vdi && !$use_vfs_block && $use_block_sata && !$use_part_block] config {
+			<service name="Block" label="disk0"> <child name="ahci"/></service>
+			<service name="Block" label="disk1"> <child name="nvme"/></service>
+			<service name="Block" label="disk2"> <child name="ahci"/></service>}
 append config {
 			<service name="Gui"> <child name="wm"/> </service>
 			<service name="Rtc"> <child name="pc_rtc"/> </service>
