@@ -1,0 +1,9 @@
+LICENSE := GPLv2
+VERSION := 0.9.15
+DOWNLOADS := libvnc.archive
+
+URL(libvnc) := https://github.com/LibVNC/libvncserver/archive/LibVNCServer-$(VERSION).tar.gz
+SHA(libvnc) := 62352c7795e231dfce044beb96156065a05a05c974e5de9e023d688d8ff675d7
+DIR(libvnc) := src
+
+PATCHES := patches/CMakeLists.patch

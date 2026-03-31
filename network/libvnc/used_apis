@@ -1,0 +1,6 @@
+genodelabs/api/libc
+genodelabs/api/libpng
+genodelabs/api/jpeg
+genodelabs/api/posix
+genodelabs/api/so
+genodelabs/api/zlib
