@@ -1,0 +1,16 @@
+LICENSE := GPLv2
+VERSION := 0.9.15
+DOWNLOADS := libvnc.file license.file
+
+URL(libvnc) := https://github.com/LibVNC/libvncserver/raw/refs/tags/LibVNCServer-$(VERSION)/client_examples/SDLvncviewer.c
+SHA(libvnc) := dc8027e30a9b2d9a85fdf5b80b515698e0621b20c12d93edea1e2541ca1f95fd
+
+URL(license) := https://github.com/LibVNC/libvncserver/raw/refs/tags/LibVNCServer-$(VERSION)/COPYING
+SHA(license) := 4d23c8c814e5baf007d854f01d8502e77dc56a41144934e003fb32c4e052d20f
+
+DIRS := src
+DIR_CONTENT(src) := SDLvncviewer.c COPYING
+
+PATCHES := patches/vnc_pwd.patch \
+           patches/SDLvncviewer.patch \
+           patches/Makefile.patch

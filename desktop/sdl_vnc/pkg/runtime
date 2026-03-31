@@ -1,0 +1,105 @@
+runtime | ram: 55M | caps: 500 | binary: init
++ requires
+  + nic
+  + gui
+  + file_system | label: recall | writeable: yes
+  + timer
+  + rtc
+  + rm | . used by lxip version
+
++ config
+  + parent-provides
+  | + service CPU
+  | + service LOG
+  | + service PD
+  | + service ROM
+  | + service Timer
+  | + service Gui
+  | + service Nic
+  | + service File_system
+  | + service Rtc
+  | + service RM | . used by lxip version
+
+  + default-route
+  | + any-service
+  |   + parent
+  |   + any-child
+
+  + start vfs | caps: 100 | ram: 2M
+  | + provides
+  | | + service File_system
+  | + config
+  | | + vfs
+  | | | + fs
+  | | | + import
+  | | |   + inline config
+  | | |     + config
+  | | |       + arg | value: sdlvncviewer
+  | | |       + arg | value: 127.0.0.1:5901
+  | | |       x arg | value: -password
+  | | |       + libc
+  | | |       |      stdout: /dev/log
+  | | |       |      stderr: /dev/log
+  | | |       |      rtc:    /dev/rtc
+  | | |       |      socket: /socket
+  | | |       + vfs
+  | | |         + dir dev
+  | | |         | + log
+  | | |         | + null
+  | | |         | + rtc
+  | | |         | + inline random
+  | | |         |   : 01234567890123456789
+  | | |         + dir socket
+  | | |           + lwip | dhcp: yes
+  | | + policy | label_prefix: fs_rom | root: / | writeable: no
+  | + route
+  |   + service File_system
+  |   | + parent | identity: recall
+  |   + any-service
+  |     + parent
+
+  + start fs_rom | caps: 100 | ram: 1M
+  | + provides
+  | | + service ROM
+  | + config
+  | + route
+  |   + service File_system
+  |   | + child vfs
+  |   + any-service
+  |     + parent
+
+  + start sdl_vnc | caps: 220 | ram: 64M
+    + route
+      + service ROM | label: config
+      | + child fs_rom | label: config
+      + any-service
+        + parent
+        + any-child
+
++ content
+  + rom | label: vfs
+  + rom | label: vfs.lib.so
+  + rom | label: vfs_lwip.lib.so
+  + rom | label: vfs_lxip.lib.so
+  + rom | label: vfs_gpu.lib.so
+  + rom | label: vfs_import.lib.so
+  + rom | label: lxip.lib.so
+  + rom | label: libc.lib.so
+  + rom | label: sdl2.lib.so
+  + rom | label: mesa.lib.so
+  + rom | label: egl.lib.so
+  + rom | label: glapi.lib.so
+  + rom | label: libiconv.lib.so
+  + rom | label: libdrm.lib.so
+  + rom | label: expat.lib.so
+  + rom | label: stdcxx.lib.so
+  + rom | label: libm.lib.so
+  + rom | label: libpng.lib.so
+  + rom | label: jpeg.lib.so
+  + rom | label: zlib.lib.so
+  + rom | label: init
+  + rom | label: fs_rom
+  + rom | label: sdl_vnc
+  + rom | label: libvncclient.lib.so
+  + rom | label: libvncserver.lib.so
+-

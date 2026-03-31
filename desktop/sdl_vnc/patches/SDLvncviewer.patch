@@ -1,0 +1,21 @@
++++ SDLvncviewer.c
+@@ -498,6 +498,9 @@
+ 	atexit(SDL_Quit);
+ 	signal(SIGINT, exit);
+ 
++	/* ask for unicode characters instead of keycodes */
++	SDL_StartTextInput();
++
+ 	do {
+ 	  /* 16-bit: cl=rfbGetClient(5,3,2); */
+ 	  cl=rfbGetClient(8,3,4);
+@@ -531,7 +531,8 @@
+ 		break;
+ 	    }
+ 	    else {
+-	      i=WaitForMessage(cl,500);
++	      /* increase timeout to 1ms to avoid 100% CPU utilization */
++	      i=WaitForMessage(cl,1000);
+ 	      if(i<0)
+ 		{
+ 		  cleanup(cl);
