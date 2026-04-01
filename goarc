@@ -41,4 +41,8 @@ set version(_/src/qmicli)         2026-03-04
 set version(_/pkg/sdl_vnc)        2026-03-31
 set version(_/src/sdl_vnc)        2026-03-31
 
+set version(_/pkg/vnc_server)     2026-03-31
+set version(_/src/vnc_server)     2026-03-31
+set version(_/raw/vnc_server)     2026-03-31
+
 set version(_/src/seoul)          2025-12-11

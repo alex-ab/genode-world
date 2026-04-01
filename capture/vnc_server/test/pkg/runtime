@@ -1,0 +1,61 @@
+runtime | ram: 250M | caps: 2000 | binary: init
++ requires
+  + capture
+  + event
+  + gui
+  + nic | tap_name: tap_goa
+  | + policy | label_suffix: vnc | domain: vnc
+  | + domain vnc | interface: 10.0.59.1/24
+  | | + dhcp-server
+  | |               ip_first:        10.0.59.2
+  | |               ip_last:         10.0.59.2
+  | |               dns_config_from: uplink
+  | + tcp-forward | port: 5900 | domain: vnc | to: 10.0.59.2
+  + fs
+  + report shape
+  + report clipboard
+  + rom clipboard
+  + rom mesa_gpu.lib.so
+  + timer
++ content
+  + rom passwd
++ config | verbose: yes
+  + parent-provides
+  | + service ROM
+  | + service LOG
+  | + service RM
+  | + service CPU
+  | + service PD
+  | + service Gui
+  | + service Timer
+  | + service Capture
+  | + service Event
+  | + service Report
+  | + service Nic
+  | + service File_system
+  + default | caps: 300
+  + start vnc_server | caps: 1000 | ram: 130M
+  | + route
+  |   + service ROM | label: config
+  |   | + parent | label: vnc.config
+  |   + service Nic
+  |   | + parent | label: vnc
+  |   + any-service
+  |     + parent
+  |     + any-child
+  + start textedit | ram: 100M
+    + route
+      + service ROM | label: config
+      | + parent | label: textedit.config
+      + service ROM | label: mesa_gpu.lib.so
+      | + parent | label: mesa_gpu.lib.so
+      + service ROM | label: clipboard
+      | + parent | label: clipboard
+      + service Report | label: clipboard
+      | + parent | label: clipboard
+      + service Report | label: shape
+      | + parent | label: shape
+      + any-service
+        + parent
+        + any-child
+-

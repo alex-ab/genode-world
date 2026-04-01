@@ -1,0 +1,78 @@
+runtime | ram: 135M | caps: 1300 | binary: init
++ requires
+  + capture
+  + event
+  + nic
+  + fs recall | writeable: yes
+  + timer
+
++ config
+  + parent-provides
+  | + service ROM
+  | + service LOG
+  | + service RM
+  | + service CPU
+  | + service PD
+  | + service Timer
+  | + service Capture
+  | + service Event
+  | + service Nic
+  | + service File_system
+
+  + start vfs | caps: 100 | ram: 2M
+  | + provides
+  | | + service File_system
+  | + config
+  | | + vfs
+  | | | + fs
+  | | | + import
+  | | |   + rom vnc.config
+  | | + policy | label_prefix: fs_rom | root: / | writeable: no
+  | + route
+  |   + service File_system
+  |   | + parent | identity: recall
+  |   + any-service
+  |     + parent
+
+  + start fs_rom | caps: 100 | ram: 1M
+  | + provides
+  | | + service ROM
+  | + config
+  | + route
+  |   + service File_system
+  |   | + child vfs
+  |   + any-service
+  |     + parent
+
+  + start vnc_server | caps: 1000 | ram: 130M
+    + route
+      + service ROM | label: config
+      | + child fs_rom | label: vnc.config
+      + service ROM | label: passwd
+      | + child fs_rom | label: passwd
+      + service Nic
+      | + parent | label: vnc
+      + any-service
+        + parent
+        + any-child
+
++ content
+  + rom vnc.config
+  + rom vnc_server
+  + rom init
+  + rom fs_rom
+  + rom vfs
+  + rom ld.lib.so
+  + rom libc.lib.so
+  + rom libm.lib.so
+  + rom vfs.lib.so
+  + rom vfs_lxip.lib.so
+  + rom vfs_pipe.lib.so
+  + rom vfs_import.lib.so
+  + rom lxip.lib.so
+  + rom jpeg.lib.so
+  + rom zlib.lib.so
+  + rom libpng.lib.so
+  + rom libvncclient.lib.so
+  + rom libvncserver.lib.so
+-
