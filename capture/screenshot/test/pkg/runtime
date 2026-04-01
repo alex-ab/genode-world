@@ -1,0 +1,66 @@
+runtime | ram: 50M | caps: 500 | binary: init
++ requires
+  + capture
+  + fs target | writeable: yes
+  + rtc
+  + timer
++ config | verbose: yes
+  + parent-provides
+  | + service ROM
+  | + service LOG
+  | + service CPU
+  | + service PD
+  | + service Timer
+  | + service Capture
+  | + service Rtc
+  | + service File_system
+  + default | caps: 100
+  + start screenshot | ram: 32M
+  | + config
+  | | + libc | stdin: /dev/null | stdout: /dev/log | stderr: /dev/log
+  | | + vfs
+  | |   + fs
+  | |   + dir dev
+  | |     + null
+  | |     + log
+  | + route
+  |   + service ROM | label: trigger
+  |   | + child dynamic_rom
+  |   + service File_system
+  |   | + parent | identity: target
+  |   + any-service
+  |     + parent
+  |     + any-child
+  + start dynamic_rom | ram: 1M
+    + provides
+    | + service ROM
+    + config
+    | + rom trigger
+    |   + empty
+    |   + sleep | milliseconds: 100
+    |   + inline
+    |   | + testfile | enabled: yes
+    |   + sleep | milliseconds: 2000
+    |   + inline
+    |   | + testfile1234 | enabled: no
+    |   + sleep | milliseconds: 10000
+    |   + empty
+    + route
+      + any-service
+        + parent
+        + any-child
++ content
+  + rom screenshot
+  | .
+  | . components
+  + rom init
+  + rom dynamic_rom
+  + rom ld.lib.so
+  | .
+  | . libraries
+  + rom libc.lib.so
+  + rom libm.lib.so
+  + rom vfs.lib.so
+  + rom zlib.lib.so
+  + rom libpng.lib.so
+-

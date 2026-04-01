@@ -1,0 +1,7 @@
+genodelabs/src/init
+genodelabs/src/zlib
+genodelabs/src/libc
+genodelabs/src/vfs
+genodelabs/src/report_rom
+genodelabs/src/global_keys_handler
+genodelabs/src/libpng

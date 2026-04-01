@@ -45,4 +45,7 @@ set version(_/pkg/vnc_server)     2026-03-31
 set version(_/src/vnc_server)     2026-03-31
 set version(_/raw/vnc_server)     2026-03-31
 
+set version(_/pkg/screenshot)     2026-04-01
+set version(_/src/screenshot)     2026-04-01
+
 set version(_/src/seoul)          2025-12-11

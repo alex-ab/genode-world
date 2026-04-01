@@ -1,0 +1,77 @@
+runtime | ram: 36M | caps: 1000 | binary: init
++ requires
+  + gui
+  + capture
+  + fs target | writeable: yes
+  + rtc
+
++ config
+  + parent-provides
+  | + service ROM
+  | + service PD
+  | + service CPU
+  | + service LOG
+  | + service Rtc
+  | + service Capture
+  | + service Gui
+  | + service File_system
+  + default | caps: 150
+
+  + start screenshot | ram: 32M
+  | + config
+  | | + libc | stdin: /dev/null | stdout: /dev/log | stderr: /dev/log
+  | | + vfs
+  | |   + fs
+  | |   + dir dev
+  | |     + null
+  | |     + log
+  | + route
+  |   + service ROM | label: trigger
+  |   | + child report
+  |   + service File_system
+  |   | + parent | identity: target
+  |   + any-service
+  |     + parent
+  |     + any-child
+
+  + start report | ram: 1M
+  | + binary report_rom
+  | + provides
+  | | + service Report
+  | | + service ROM
+  | + config
+  | | + policy | label: screenshot -> trigger | report: keys -> screenshot
+  | + route
+  |   + any-service
+  |     + parent
+  |     + any-child
+
+  + start keys | ram: 1M
+    + binary global_keys_handler
+    + config
+    | + bool screenshot | initial: no
+    | + press KEY_PRINT | bool: screenshot | change: toggle
+    | + report screenshot
+    |   + bool screenshot
+    + route
+      + service Report
+      | + child report
+      + any-service
+        + parent
+
++ content
+  + rom init
+  | .
+  | . components
+  + rom screenshot
+  + rom global_keys_handler
+  + rom report_rom
+  + rom ld.lib.so
+  | .
+  | . libraries
+  + rom libc.lib.so
+  + rom libm.lib.so
+  + rom vfs.lib.so
+  + rom libpng.lib.so
+  + rom zlib.lib.so
+-
