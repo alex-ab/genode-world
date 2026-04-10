@@ -1,0 +1,37 @@
+qt6_7_fix_ecm.patch
+
+From: Christian Prochaska <christian.prochaska@genode-labs.com>
+
+Excerpt from "Update ECM to KF 5.240.0 version"
+as prerequisite for qt6_7_fix.patch.
+---
+ src/lib/app/mainmenu.cpp      |    2 +-
+ src/lib/webengine/webview.cpp |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/lib/app/mainmenu.cpp b/src/lib/app/mainmenu.cpp
+index 7671cda0b..b77f2a6aa 100644
+--- a/src/lib/app/mainmenu.cpp
++++ b/src/lib/app/mainmenu.cpp
+@@ -177,7 +177,7 @@ void MainMenu::savePageAs()
+ 
+ void MainMenu::sendLink()
+ {
+-    const QUrl mailUrl = QUrl::fromEncoded("mailto:%20?body=" + QUrl::toPercentEncoding(m_window->weView()->url().toEncoded()) + "&subject=" + QUrl::toPercentEncoding(m_window->weView()->title()));
++    const QUrl mailUrl = QUrl::fromEncoded("mailto:%20?body=" + QUrl::toPercentEncoding(QString::fromUtf8(m_window->weView()->url().toEncoded())) + "&subject=" + QUrl::toPercentEncoding(m_window->weView()->title()));
+     QDesktopServices::openUrl(mailUrl);
+ }
+ 
+diff --git a/src/lib/webengine/webview.cpp b/src/lib/webengine/webview.cpp
+index 54d408292..236b02369 100644
+--- a/src/lib/webengine/webview.cpp
++++ b/src/lib/webengine/webview.cpp
+@@ -496,7 +496,7 @@ void WebView::sendTextByMail()
+ 
+ void WebView::sendPageByMail()
+ {
+-    const QUrl mailUrl = QUrl::fromEncoded("mailto:%20?body=" + QUrl::toPercentEncoding(url().toEncoded()) + "&subject=" + QUrl::toPercentEncoding(title()));
++    const QUrl mailUrl = QUrl::fromEncoded("mailto:%20?body=" + QUrl::toPercentEncoding(QString::fromUtf8(url().toEncoded())) + "&subject=" + QUrl::toPercentEncoding(title()));
+     QDesktopServices::openUrl(mailUrl);
+ }
+ 

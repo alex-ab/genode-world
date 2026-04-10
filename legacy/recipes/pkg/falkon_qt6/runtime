@@ -32,6 +32,7 @@
 		<rom label="libQt6OpenGL.lib.so"/>
 		<rom label="libQt6PrintSupport.lib.so"/>
 		<rom label="libQt6Qml.lib.so"/>
+		<rom label="libQt6QmlMeta.lib.so"/>
 		<rom label="libQt6QmlModels.lib.so"/>
 		<rom label="libQt6QmlWorkerScript.lib.so"/>
 		<rom label="libQt6Quick.lib.so"/>

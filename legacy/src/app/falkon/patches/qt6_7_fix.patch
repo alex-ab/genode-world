@@ -1,0 +1,63 @@
+Fix compilation against Qt 6.7
+
+From: Yifan Zhu <fanzhuyifan@gmail.com>
+
+QUrl::fromEncoded(const QByteArray &url...) is removed in Qt 6.7 in
+favor of QUrl::fromEncoded(QByteArrayView input...).
+Wrap the corresponding argument in QByteArray() to make the cast explicit.
+This is backwards-compatible with old Qt versions.
+
+See qt/qtbase commit aa481854a98b1be0a061257ae4e817adcf1f77fc
+
+BUG: 478857
+---
+ src/lib/app/mainmenu.cpp      |    2 +-
+ src/lib/other/updater.cpp     |    2 +-
+ src/lib/webengine/webview.cpp |    4 ++--
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/lib/app/mainmenu.cpp b/src/lib/app/mainmenu.cpp
+index b77f2a6aa..7786a0bf6 100644
+--- a/src/lib/app/mainmenu.cpp
++++ b/src/lib/app/mainmenu.cpp
+@@ -177,7 +177,7 @@ void MainMenu::savePageAs()
+ 
+ void MainMenu::sendLink()
+ {
+-    const QUrl mailUrl = QUrl::fromEncoded("mailto:%20?body=" + QUrl::toPercentEncoding(QString::fromUtf8(m_window->weView()->url().toEncoded())) + "&subject=" + QUrl::toPercentEncoding(m_window->weView()->title()));
++    const QUrl mailUrl = QUrl::fromEncoded(QByteArray("mailto:%20?body=" + QUrl::toPercentEncoding(QString::fromUtf8(m_window->weView()->url().toEncoded())) + "&subject=" + QUrl::toPercentEncoding(m_window->weView()->title())));
+     QDesktopServices::openUrl(mailUrl);
+ }
+ 
+diff --git a/src/lib/other/updater.cpp b/src/lib/other/updater.cpp
+index ef8f1b3d5..7ed014e48 100644
+--- a/src/lib/other/updater.cpp
++++ b/src/lib/other/updater.cpp
+@@ -157,5 +157,5 @@ void Updater::downCompleted()
+ 
+ void Updater::downloadNewVersion()
+ {
+-    m_window->tabWidget()->addView(QUrl::fromEncoded(QByteArray(Qz::WWWADDRESS) + QByteArray("/download")), tr("Update"), Qz::NT_NotSelectedTab);
++    m_window->tabWidget()->addView(QUrl::fromEncoded(QByteArray(QByteArray(Qz::WWWADDRESS) + QByteArray("/download"))), tr("Update"), Qz::NT_NotSelectedTab);
+ }
+diff --git a/src/lib/webengine/webview.cpp b/src/lib/webengine/webview.cpp
+index 236b02369..8755596f0 100644
+--- a/src/lib/webengine/webview.cpp
++++ b/src/lib/webengine/webview.cpp
+@@ -489,14 +489,14 @@ void WebView::openUrlInNewWindow()
+ void WebView::sendTextByMail()
+ {
+     if (auto* action = qobject_cast<QAction*>(sender())) {
+-        const QUrl mailUrl = QUrl::fromEncoded("mailto:%20?body=" + QUrl::toPercentEncoding(action->data().toString()));
++        const QUrl mailUrl = QUrl::fromEncoded(QByteArray("mailto:%20?body=" + QUrl::toPercentEncoding(action->data().toString())));
+         QDesktopServices::openUrl(mailUrl);
+     }
+ }
+ 
+ void WebView::sendPageByMail()
+ {
+-    const QUrl mailUrl = QUrl::fromEncoded("mailto:%20?body=" + QUrl::toPercentEncoding(QString::fromUtf8(url().toEncoded())) + "&subject=" + QUrl::toPercentEncoding(title()));
++    const QUrl mailUrl = QUrl::fromEncoded(QByteArray("mailto:%20?body=" + QUrl::toPercentEncoding(QString::fromUtf8(url().toEncoded())) + "&subject=" + QUrl::toPercentEncoding(title())));
+     QDesktopServices::openUrl(mailUrl);
+ }
+ 

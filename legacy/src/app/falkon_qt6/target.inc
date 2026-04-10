@@ -5,7 +5,7 @@ CMAKE_LISTS_DIR = $(FALKON_DIR)
 CMAKE_TARGET_BINARIES = bin/falkon bin/libFalkonPrivate.lib.so
 
 QT6_PORT_LIBS += libQt6Core libQt6Gui libQt6Network libQt6OpenGL libQt6PrintSupport libQt6Sql libQt6Widgets
-QT6_PORT_LIBS += libQt6Qml libQt6QmlModels libQt6Quick libQt6QuickWidgets
+QT6_PORT_LIBS += libQt6Qml libQt6QmlMeta libQt6QmlModels libQt6QmlWorkerScript libQt6Quick libQt6QuickWidgets
 QT6_PORT_LIBS += libQt6Svg
 QT6_PORT_LIBS += libQt6WebChannel
 QT6_PORT_LIBS += libQt6WebEngineCore libQt6WebEngineWidgets
