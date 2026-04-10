@@ -7,8 +7,8 @@ QT6_WEBENGINE_PORT_DIR := $(call select_from_ports,qt6_webengine)
 QT6_WEBENGINE_DIR       = $(QT6_WEBENGINE_PORT_DIR)/src/lib/qt6_webengine
 endif
 
-QT6_PORT_LIBS  = libQt6Core libQt6Gui libQt6Network libQt6OpenGL libQt6Widgets
-QT6_PORT_LIBS += libQt6Qml libQt6QmlModels libQt6Quick libQt6QuickWidgets
+QT6_PORT_LIBS  = libQt6Core libQt6Gui libQt6Network libQt6OpenGL libQt6PrintSupport libQt6Widgets
+QT6_PORT_LIBS += libQt6Qml libQt6QmlMeta libQt6QmlModels libQt6QmlWorkerScript libQt6Quick libQt6QuickWidgets
 QT6_PORT_LIBS += libQt6WebChannel libQt6WebChannelQuick
 
 # avoid error about missing TLS init function for 'thread_local' variables
@@ -59,8 +59,7 @@ build: cmake_prepared.tag qt6_so_files
 		-DQT_HOST_PATH="$(QT_TOOLS_DIR)" \
 		-DCMAKE_PREFIX_PATH="$(CURDIR)/build_dependencies" \
 		-DCMAKE_MODULE_PATH="$(CURDIR)/build_dependencies/lib/cmake/Modules" \
-		-DCMAKE_TOOLCHAIN_FILE="$(CURDIR)/build_dependencies/lib/cmake/Modules/Platform/Genode.cmake" \
-		-DCMAKE_SYSTEM_NAME="FreeBSD" \
+		-DCMAKE_SYSTEM_NAME="Genode" \
 		-DCMAKE_SYSTEM_PROCESSOR="$(GENODE_CMAKE_SYSTEM_PROCESSOR)" \
 		-DTEST_architecture_arch="$(GENODE_CMAKE_SYSTEM_PROCESSOR)" \
 		-DCMAKE_AR="$(AR)" \
@@ -73,6 +72,7 @@ build: cmake_prepared.tag qt6_so_files
 		-DCMAKE_MODULE_LINKER_FLAGS="$(GENODE_CMAKE_LFLAGS_SHLIB)" \
 		-DQT_QMAKE_TARGET_MKSPEC=$(QT_PLATFORM) \
 		-DCMAKE_INSTALL_PREFIX=/qt \
+		-DQT_GENERATE_SBOM=OFF \
 		-DFEATURE_webengine_embedded_build=OFF \
 		-DFEATURE_qtpdf_build=OFF \
 		$(QT6_WEBENGINE_DIR) \
