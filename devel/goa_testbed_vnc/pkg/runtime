@@ -1,0 +1,296 @@
+runtime | ram: 1G | caps: 5000 | binary: init
++ requires
+  + nic
+  | + policy | label_suffix: -> http   | domain: http
+  | + policy | label_suffix: -> telnet | domain: telnet
+  | + policy | label_suffix: -> gdb    | domain: gdb
+  | + policy | label_suffix: -> vnc    | domain: vnc
+  | + domain http | interface: 10.0.200.1/24
+  | | + dhcp-server
+  | |               ip_first:        10.0.200.2
+  | |               ip_last:         10.0.200.2
+  | |               dns_config_from: uplink
+  | + domain telnet | interface: 10.0.201.1/24
+  | | + dhcp-server
+  | |               ip_first:        10.0.201.2
+  | |               ip_last:         10.0.201.2
+  | |               dns_config_from: uplink
+  | + domain gdb | interface: 10.0.202.1/24
+  | | + dhcp-server
+  | |               ip_first:        10.0.202.2
+  | |               ip_last:         10.0.202.2
+  | |               dns_config_from: uplink
+  | + domain vnc | interface: 10.0.203.1/24
+  | | + dhcp-server
+  | |               ip_first:        10.0.203.2
+  | |               ip_last:         10.0.203.2
+  | |               dns_config_from: uplink
+  | + tcp-forward | port: 5555 | to_port: 80   | domain: http   | to: 10.0.200.2
+  | + tcp-forward | port: 2323 | to_port: 23   | domain: telnet | to: 10.0.201.2
+  | + tcp-forward | port: 9999                 | domain: gdb    | to: 10.0.202.2
+  | + tcp-forward | port: 5900 | to_port: 5900 | domain: vnc    | to: 10.0.203.2
+  + timer
+  + rtc
+  + trace
+  + gpu
+  + play
+  + record
+  + usb
+  + vm
+  + fs | writeable: yes
+  + rom mesa_gpu.lib.so
+  + rom platform_info
+
++ config
+  + parent-provides
+  | + service LOG
+  | + service CPU
+  | + service RM
+  | + service PD
+  | + service ROM
+  | + service TRACE
+  | + service VM
+  | + service Timer
+  | + service Rtc
+  | + service Nic
+  | + service Play
+  | + service Record
+  | + service Usb
+  | + service Gpu
+  | + service File_system
+  | + service Report
+
+  + default | caps: 300
+
+  + start vnc_server | caps: 300 | ram: 50M
+  | + route
+  | | + service Nic
+  | | | + parent | label: vnc
+  | | + service Event
+  | | | + child event_filter | label: vnc
+  | | + service Capture
+  | | | + child nitpicker
+  | | + service PD
+  | | | + parent
+  | | + service CPU
+  | | | + parent
+  | | + service LOG
+  | | | + parent
+  | | + service ROM
+  | | | + parent
+  | | + service Rtc
+  | | | + parent
+  | | + service Timer
+  | |   + parent
+  | + config | period_ms: 30 | width: 1280 | height: 720
+  |   + libc
+  |   |      stdin:  /dev/null
+  |   |      stdout: /dev/log
+  |   |      stderr: /dev/log
+  |   |      socket: /socket
+  |   |      pipe:   /pipe
+  |   |      rtc:    /dev/rtc
+  |   + vfs
+  |     + dir dev
+  |     | + log
+  |     | + null
+  |     | + rtc
+  |     + dir socket
+  |     | + lxip | dhcp: yes
+  |     + dir pipe
+  |       + pipe
+
+  + start event_filter | caps: 100 | ram: 1M
+  | + provides
+  | | + service Event
+  | + route
+  |   + service ROM | label: config
+  |   | + parent | label: event_filter_vnc.config
+  |   + service Event
+  |   | + child nitpicker
+  |   + service PD
+  |   | + parent
+  |   + service CPU
+  |   | + parent
+  |   + service LOG
+  |   | + parent
+  |   + service ROM
+  |   | + parent
+  |   + service Timer
+  |     + parent
+
+  + start report_rom | caps: 100 | ram: 1M
+  | + provides
+  | | + service Report
+  | | + service ROM
+  | + config | verbose: no
+  | | + policy
+  | | |        label_prefix: focus_rom
+  | | |        report:       nitpicker -> hover
+  | | + policy
+  | | |        label:  pointer -> hover
+  | | |        report: nitpicker -> hover
+  | | + policy
+  | | |        label:  pointer -> xray
+  | | |        report: dummy
+  | | + policy
+  | | |        label:  clipboard
+  | | |        report: clipboard
+  | | + policy
+  | |          label:  capslock
+  | |          report: dummy
+  | + route
+  |   + service PD
+  |   | + parent
+  |   + service CPU
+  |   | + parent
+  |   + service LOG
+  |   | + parent
+  |   + service ROM
+  |     + parent
+
+  + start focus_rom | caps: 100 | ram: 1M
+  | + binary rom_filter
+  | + provides
+  | | + service ROM
+  | + config
+  | | + input hovered_label | rom: hover | node: hover
+  | | | + attribute label
+  | | + output | node: focus
+  | |   + attribute label | input: hovered_label
+  | + route
+  |   + service ROM | label: hover
+  |   | + child report_rom
+  |   + service PD
+  |   | + parent
+  |   + service CPU
+  |   | + parent
+  |   + service LOG
+  |   | + parent
+  |   + service ROM
+  |     + parent
+
+  + start nitpicker | caps: 100 | ram: 4M
+  | + provides
+  | | + service Gui
+  | | + service Capture
+  | | + service Event
+  | + route
+  | | + service ROM | label: focus
+  | | | + child focus_rom
+  | | + service PD
+  | | | + parent
+  | | + service CPU
+  | | | + parent
+  | | + service LOG
+  | | | + parent
+  | | + service ROM
+  | | | + parent
+  | | + service Timer
+  | | | + parent
+  | | + service Report
+  | |   + child report_rom
+  | + config | focus: rom
+  |   + capture
+  |   + event
+  |   + report
+  |   |        hover: yes
+  |   + domain pointer
+  |   |        layer:   1
+  |   |        content: client
+  |   |        label:   no
+  |   |        origin:  pointer
+  |   + domain default
+  |   |        layer:   2
+  |   |        content: client
+  |   |        label:   no
+  |   |        hover:   always
+  |   + policy
+  |   |        label_prefix: pointer
+  |   |        domain:       pointer
+  |   + default-policy
+  |                    domain: default
+
+  + start pointer | caps: 100 | ram: 1M
+  | + provides
+  | | + service Report
+  | + route
+  | | + service PD
+  | | | + parent
+  | | + service CPU
+  | | | + parent
+  | | + service LOG
+  | | | + parent
+  | | + service ROM | label: hover
+  | | | + child report_rom
+  | | + service ROM | label: xray
+  | | | + child report_rom
+  | | + service ROM
+  | | | + parent
+  | | + service Gui
+  | |   + child nitpicker
+  | + config | shapes: yes
+
+  + start testbed | caps: 5000 | ram: 1G
+    + binary init
+    + route
+      + service ROM | label: config
+      | + parent | label: testbed.config
+      + service Gui
+      | + child nitpicker
+      + service Nic | label_prefix: telnet
+      | + parent | label: telnet
+      + service Nic | label_prefix: http
+      | + parent | label: http
+      + service Nic | label_prefix: gdb
+      | + parent | label: gdb
+      + service ROM | label: mesa_gpu.lib.so
+      | + parent | label: mesa_gpu.lib.so
+      + service ROM | label: platform_info
+      | + parent | label: platform_info
+      + service ROM | label: clipboard
+      | + child report_rom | label: clipboard
+      + service ROM | label: capslock
+      | + child report_rom | label: capslock
+      + service Report | label: shape
+      | + child pointer
+      + service Report | label: clipboard
+      | + child report_rom | label: clipboard
+      + any-service
+        + parent
++ content
+  + rom testbed.config
+  + rom lighttpd.conf
+  + rom event_filter_vnc.config
+
+  + rom init
+  + rom monitor
+  + rom lighttpd
+  + rom fs_rom
+  + rom fs_report
+  + rom vfs
+  + rom tcp_terminal
+  + rom file_terminal
+  + rom terminal_log
+  + rom stdin2out
+  + rom nitpicker
+  + rom rom_filter
+  + rom pointer
+  + rom report_rom
+  + rom event_filter
+
+  + rom ld.lib.so
+  + rom libc.lib.so
+  + rom libm.lib.so
+  + rom pcre.lib.so
+  + rom posix.lib.so
+  + rom libcrypto.lib.so
+  + rom libssl.lib.so
+  + rom sandbox.lib.so
+  + rom vfs.lib.so
+  + rom vfs_import.lib.so
+  + rom vfs_lwip.lib.so
+  + rom vfs_pipe.lib.so
+  + rom vfs_jitterentropy.lib.so
+  + rom zlib.lib.so
+-
