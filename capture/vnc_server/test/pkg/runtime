@@ -3,7 +3,7 @@ runtime | ram: 250M | caps: 2000 | binary: init
   + capture
   + event
   + gui
-  + nic | tap_name: tap_goa
+  + nic
   | + policy | label_suffix: vnc | domain: vnc
   | + domain vnc | interface: 10.0.59.1/24
   | | + dhcp-server
