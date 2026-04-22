@@ -2,6 +2,7 @@ set version(_/api/ccid)           1.6.2-2025-10-10
 set version(_/src/ccid)           1.6.2-2025-10-10
 set version(_/src/chrony)         4.6.1-2025-10-02
 set version(_/src/fio)            3.39-2025-12-03
+set version(_/pkg/fio)            3.39-2025-12-03
 set version(_/src/git)            2.52.0-2026-02-16
 set version(_/api/glib)           2.85.4-2025-08-25
 set version(_/src/glib)           2.85.4-2025-08-25
@@ -24,6 +25,8 @@ set version(_/src/pcsc-lite)      2.3.3-2025-11-17
 set version(_/src/rsyslog)        8.2502.0-2025-10-09
 set version(_/api/sqlite)         3.50.4-2025-09-18
 set version(_/src/sqlite)         3.50.4-2025-09-18
+set version(_/src/sqlite-speedtest) 3.50.4-2025-09-18
+set version(_/pkg/sqlite-speedtest) 3.50.4-2025-09-18
 
 set version(_/pkg/test-smartcard) 2025-11-17
 set version(_/raw/test-smartcard) 2025-10-10
@@ -32,7 +35,8 @@ set version(_/src/test-smartcard) 2025-10-10
 set version(_/pkg/user_keys)      2025-10-23
 set version(_/pkg/mobile_network) 2026-03-04
 
-set version(_/api/broadband)      2026-03-12
+set version(_/api/broadband-util) 2026-03-12
+set version(_/src/broadband-util) 2026-03-12
 
 set version(_/pkg/goa_testbed)     2026-04-16
 set version(_/raw/goa_testbed)     2026-04-16
