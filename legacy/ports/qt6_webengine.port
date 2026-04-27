@@ -4,5 +4,5 @@ VERSION := 6.8.3
 DOWNLOADS := qt6_webengine.git
 
 URL(qt6_webengine) := https://codeberg.org/cproc/qt6_webengine.git
-REV(qt6_webengine) := issue435
+REV(qt6_webengine) := issue440
 DIR(qt6_webengine) := src/lib/qt6_webengine
