@@ -1,6 +1,6 @@
-runtime | ram: 10M | caps: 600 | binary: init
+runtime | ram: 10M | caps: 700 | binary: init
 + requires
-  + file_system | label: keyboard
+  + file_system | label: keyboard | writeable: yes
   + gui
 
 + config
@@ -21,13 +21,25 @@ runtime | ram: 10M | caps: 600 | binary: init
 
   + default | caps: 100
 
-  + start rom_to_file | ram: 2M
-    + config | rom: user.remap
-      + vfs | + fs
+  + start rom_reporter | ram: 1M
+    + config
+      + rom | label: user.remap
     + route
-      + service ROM         | label: user.remap | + child rom_filter
-      + service File_system                     | + parent | identity: keyboard
-      + any-service                             | + parent
+      + service ROM | label: user.remap | + child rom_filter
+      + service Report                  | + child fs_report | identity:
+      + any-service                     | + parent
+
+  + start fs_report | ram: 2M
+    + provides | + service Report
+    + config
+      + vfs
+        + fs
+        + import | overwrite: no
+          + rom dynamic_remap.config
+          + rom user_keys.config
+    + route
+      + service File_system                      | + parent | identity: keyboard
+      + any-service                              | + parent
 
   + start report | ram: 1M
     + binary report_rom
@@ -63,12 +75,16 @@ runtime | ram: 10M | caps: 600 | binary: init
       + any-service         | + parent
 
 + content
-  + rom | label: init
-  + rom | label: ld.lib.so
-  + rom | label: vfs.lib.so
-  + rom | label: rom_filter
-  + rom | label: global_keys_handler
-  + rom | label: report_rom
-  + rom | label: rom_to_file
-  + rom | label: fs_rom
+  + rom init
+  + rom ld.lib.so
+  + rom vfs.lib.so
+  + rom vfs_import.lib.so
+  + rom rom_filter
+  + rom global_keys_handler
+  + rom report_rom
+  + rom rom_reporter
+  + rom fs_report
+  + rom fs_rom
+  + rom dynamic_remap.config
+  + rom user_keys.config
 -

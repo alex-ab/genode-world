@@ -1,7 +1,9 @@
-_/src/init
-_/src/report_rom
-_/src/fs_rom
-_/src/rom_filter
-_/src/global_keys_handler
-_/src/rom_to_file
-_/src/vfs
+genodelabs/src/init
+genodelabs/src/report_rom
+genodelabs/src/fs_report
+genodelabs/src/fs_rom
+genodelabs/src/rom_filter
+genodelabs/src/rom_reporter
+genodelabs/src/global_keys_handler
+genodelabs/src/vfs
+genodelabs/src/vfs_import
