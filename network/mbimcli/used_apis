@@ -1,9 +1,9 @@
-_/api/base
+genodelabs/api/base
 _/api/broadband-util
-_/api/os
-_/api/libc
-_/api/net
+genodelabs/api/os
+genodelabs/api/libc
+genodelabs/api/net
 _/api/glib
 _/api/libmbim
-_/api/report_session
-_/api/stdcxx
+genodelabs/api/report_session
+genodelabs/api/stdcxx
