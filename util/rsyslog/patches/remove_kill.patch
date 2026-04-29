@@ -1,0 +1,11 @@
+--- src/tools/iminternal.c
++++ src/tools/iminternal.c
+@@ -109,7 +109,7 @@
+ 	if(PREFER_FETCH_32BIT(bHaveMainQueue)) {
+ 		DBGPRINTF("signaling new internal message via SIGTTOU: '%s'\n",
+ 			pThis->pMsg->pszRawMsg);
+-		kill(glblGetOurPid(), SIGTTOU);
++		// kill(glblGetOurPid(), SIGTTOU);
+ 	}
+ 
+ finalize_it:
