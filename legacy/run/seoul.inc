@@ -43,7 +43,7 @@ import_from_depot [depot_user]/src/[base_src] \
                   [depot_user]/src/pci_decode \
                   [depot_user]/src/vesa_fb \
                   [depot_user]/src/boot_fb \
-                  [depot_user]/src/seoul/2025-12-11
+                  [depot_user]/src/seoul/2026-04-22
 
 if {![info exists use_usb]}        { set use_usb        1 }
 if {![info exists use_virtio]}     { set use_virtio     0 }
