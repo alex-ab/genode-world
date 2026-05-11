@@ -1,109 +1,100 @@
-<runtime ram="2G" caps="10000" binary="morph-browser" config="morph_browser.config">
-
-	<requires>
-		<nic/>
-		<file_system label="config"/>
-		<file_system label="downloads"/>
-		<gui/>
-		<report label="shape"/>
-		<report label="clipboard"/>
-		<rom label="clipboard"/>
-		<rom label="mesa_gpu.lib.so"/>
-		<gpu/>
-		<rtc/>
-		<play/>
-		<record/>
-		<capture/>
-	</requires>
-
-	<content>
-
-		<rom label="morph-browser"/>
-		<rom label="egl.lib.so"/>
-		<rom label="expat.lib.so"/>
-		<rom label="freebl3.lib.so"/>
-		<rom label="glapi.lib.so"/>
-		<rom label="libQt5Core.lib.so"/>
-		<rom label="libQt5Gui.lib.so"/>
-		<rom label="libQt5Network.lib.so"/>
-		<rom label="libQt5PrintSupport.lib.so"/>
-		<rom label="libQt5Qml.lib.so"/>
-		<rom label="libQt5QmlModels.lib.so"/>
-		<rom label="libQt5QmlWorkerScript.lib.so"/>
-		<rom label="libQt5Quick.lib.so"/>
-		<rom label="libQt5QuickControls2.lib.so"/>
-		<rom label="libQt5QuickTemplates2.lib.so"/>
-		<rom label="libQt5QuickWidgets.lib.so"/>
-		<rom label="libQt5Sql.lib.so"/>
-		<rom label="libQt5Svg.lib.so"/>
-		<rom label="libQt5Test.lib.so"/>
-		<rom label="libQt5WebChannel.lib.so"/>
-		<rom label="libQt5WebEngine.lib.so"/>
-		<rom label="libQt5WebEngineCore.lib.so"/>
-		<rom label="libQt5WebEngineWidgets.lib.so"/>
-		<rom label="libQt5Widgets.lib.so"/>
-		<rom label="libQt5Xml.lib.so"/>
-		<rom label="libUbuntuComponents.lib.so"/>
-		<rom label="libUbuntuComponentsStyles.lib.so"/>
-		<rom label="libUbuntuGestures.lib.so"/>
-		<rom label="libUbuntuMetrics.lib.so"/>
-		<rom label="libUbuntuToolkit.lib.so"/>
-		<rom label="libc.lib.so"/>
-		<rom label="libcrypto.lib.so"/>
-		<rom label="libdrm.lib.so"/>
-		<rom label="libm.lib.so"/>
-		<rom label="libmodelsplugin.lib.so"/>
-		<rom label="libmorph-web-plugin.lib.so"/>
-		<rom label="libqgenode.lib.so"/>
-		<rom label="libqjpeg.lib.so"/>
-		<rom label="libqmlplugin.lib.so"/>
-		<rom label="libqmlfolderlistmodelplugin.lib.so"/>
-		<rom label="libqmlsettingsplugin.lib.so"/>
-		<rom label="libqquicklayoutsplugin.lib.so"/>
-		<rom label="libqsqlite.lib.so"/>
-		<rom label="libqsvg.lib.so"/>
-		<rom label="libqtgraphicaleffectsplugin.lib.so"/>
-		<rom label="libqtgraphicaleffectsprivate.lib.so"/>
-		<rom label="libqtquick2plugin.lib.so"/>
-		<rom label="libqtquickcontrols2plugin.lib.so"/>
-		<rom label="libqtquicktemplates2plugin.lib.so"/>
-		<rom label="libqtwebengineplugin.lib.so"/>
-		<rom label="libubuntu-ui-extras-plugin.lib.so"/>
-		<rom label="libwindowplugin.lib.so"/>
-		<rom label="mesa.lib.so"/>
-		<rom label="nss3.lib.so"/>
-		<rom label="nssckbi.lib.so"/>
-		<rom label="qt5_component.lib.so"/>
-		<rom label="softokn3.lib.so"/>
-		<rom label="stdcxx.lib.so"/>
-		<rom label="vfs.lib.so"/>
-		<rom label="vfs_capture.lib.so"/>
-		<rom label="vfs_gpu.lib.so"/>
-		<rom label="vfs_jitterentropy.lib.so"/>
-		<rom label="vfs_oss.lib.so"/>
-		<rom label="vfs_lwip.lib.so"/>
-		<rom label="vfs_pipe.lib.so"/>
-		<rom label="vfs_qtwebengine_shm.lib.so"/>
-		<rom label="vfs_xoroshiro.lib.so"/>
-		<rom label="zlib.lib.so"/>
-
-		<rom label="morph-browser_qml.tar"/>
-		<rom label="qt5_declarative_qml.tar"/>
-		<rom label="qt5_dejavusans.tar"/>
-		<rom label="qt5_graphicaleffects_qml.tar"/>
-		<rom label="qt5_libqgenode.tar"/>
-		<rom label="qt5_libqsqlite.tar"/>
-		<rom label="qt5_libqsvg.tar"/>
-		<rom label="qt5_quickcontrols2_qml.tar"/>
-		<rom label="qt5_webengine_qml.tar"/>
-		<rom label="qt5_webengine_resources.tar"/>
-		<rom label="qt5_webengine_translations.tar"/>
-		<rom label="ubuntu-themes.tar"/>
-		<rom label="ubuntu-ui-extras_qml.tar"/>
-		<rom label="ubuntu-ui-toolkit_qml.tar"/>
-
-		<rom label="morph_browser.config"/>
-
-	</content>
-
-</runtime>
+runtime | ram: 2G | caps: 10000 | binary: morph-browser | config: morph_browser.config
++ requires
+  + nic
+  + fs config    | writeable: yes
+  + fs downloads | writeable: yes
+  + gui
+  + report shape
+  + report clipboard
+  + rom clipboard
+  + rom mesa_gpu.lib.so
+  + gpu
+  + rtc
+  + play
+  + record
+  + capture
++ content
+  + rom morph-browser
+  + rom egl.lib.so
+  + rom expat.lib.so
+  + rom freebl3.lib.so
+  + rom glapi.lib.so
+  + rom libQt5Core.lib.so
+  + rom libQt5Gui.lib.so
+  + rom libQt5Network.lib.so
+  + rom libQt5PrintSupport.lib.so
+  + rom libQt5Qml.lib.so
+  + rom libQt5QmlModels.lib.so
+  + rom libQt5QmlWorkerScript.lib.so
+  + rom libQt5Quick.lib.so
+  + rom libQt5QuickControls2.lib.so
+  + rom libQt5QuickTemplates2.lib.so
+  + rom libQt5QuickWidgets.lib.so
+  + rom libQt5Sql.lib.so
+  + rom libQt5Svg.lib.so
+  + rom libQt5Test.lib.so
+  + rom libQt5WebChannel.lib.so
+  + rom libQt5WebEngine.lib.so
+  + rom libQt5WebEngineCore.lib.so
+  + rom libQt5WebEngineWidgets.lib.so
+  + rom libQt5Widgets.lib.so
+  + rom libQt5Xml.lib.so
+  + rom libUbuntuComponents.lib.so
+  + rom libUbuntuComponentsStyles.lib.so
+  + rom libUbuntuGestures.lib.so
+  + rom libUbuntuMetrics.lib.so
+  + rom libUbuntuToolkit.lib.so
+  + rom libc.lib.so
+  + rom libcrypto.lib.so
+  + rom libdrm.lib.so
+  + rom libm.lib.so
+  + rom libmodelsplugin.lib.so
+  + rom libmorph-web-plugin.lib.so
+  + rom libqgenode.lib.so
+  + rom libqjpeg.lib.so
+  + rom libqmlplugin.lib.so
+  + rom libqmlfolderlistmodelplugin.lib.so
+  + rom libqmlsettingsplugin.lib.so
+  + rom libqquicklayoutsplugin.lib.so
+  + rom libqsqlite.lib.so
+  + rom libqsvg.lib.so
+  + rom libqtgraphicaleffectsplugin.lib.so
+  + rom libqtgraphicaleffectsprivate.lib.so
+  + rom libqtquick2plugin.lib.so
+  + rom libqtquickcontrols2plugin.lib.so
+  + rom libqtquicktemplates2plugin.lib.so
+  + rom libqtwebengineplugin.lib.so
+  + rom libubuntu-ui-extras-plugin.lib.so
+  + rom libwindowplugin.lib.so
+  + rom mesa.lib.so
+  + rom nss3.lib.so
+  + rom nssckbi.lib.so
+  + rom qt5_component.lib.so
+  + rom softokn3.lib.so
+  + rom stdcxx.lib.so
+  + rom vfs.lib.so
+  + rom vfs_capture.lib.so
+  + rom vfs_gpu.lib.so
+  + rom vfs_jitterentropy.lib.so
+  + rom vfs_oss.lib.so
+  + rom vfs_lwip.lib.so
+  + rom vfs_pipe.lib.so
+  + rom vfs_qtwebengine_shm.lib.so
+  + rom vfs_xoroshiro.lib.so
+  + rom zlib.lib.so
+  + rom morph-browser_qml.tar
+  + rom qt5_declarative_qml.tar
+  + rom qt5_dejavusans.tar
+  + rom qt5_graphicaleffects_qml.tar
+  + rom qt5_libqgenode.tar
+  + rom qt5_libqsqlite.tar
+  + rom qt5_libqsvg.tar
+  + rom qt5_quickcontrols2_qml.tar
+  + rom qt5_webengine_qml.tar
+  + rom qt5_webengine_resources.tar
+  + rom qt5_webengine_translations.tar
+  + rom ubuntu-themes.tar
+  + rom ubuntu-ui-extras_qml.tar
+  + rom ubuntu-ui-toolkit_qml.tar
+  + rom morph_browser.config
+-
