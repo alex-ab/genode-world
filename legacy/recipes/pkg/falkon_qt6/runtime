@@ -1,88 +1,81 @@
-<runtime ram="2G" caps="10000" binary="falkon" config="falkon.config">
-
-	<requires>
-		<nic/>
-		<file_system label="config"/>
-		<file_system label="downloads"/>
-		<gui/>
-		<report label="shape"/>
-		<report label="clipboard"/>
-		<rom label="clipboard"/>
-		<rom label="mesa_gpu.lib.so"/>
-		<gpu/>
-		<rtc/>
-		<record/>
-		<play/>
-		<capture/>
-	</requires>
-
-	<content>
-
-		<rom label="falkon"/>
-		<rom label="egl.lib.so"/>
-		<rom label="mesa_gpu-softpipe.lib.so"/>
-		<rom label="expat.lib.so"/>
-		<rom label="freebl3.lib.so"/>
-		<rom label="glapi.lib.so"/>
-		<rom label="libFalkonPrivate.lib.so"/>
-		<rom label="libQt6Core.lib.so"/>
-		<rom label="libQt6Core5Compat.lib.so"/>
-		<rom label="libQt6Gui.lib.so"/>
-		<rom label="libQt6Network.lib.so"/>
-		<rom label="libQt6OpenGL.lib.so"/>
-		<rom label="libQt6PrintSupport.lib.so"/>
-		<rom label="libQt6Qml.lib.so"/>
-		<rom label="libQt6QmlMeta.lib.so"/>
-		<rom label="libQt6QmlModels.lib.so"/>
-		<rom label="libQt6QmlWorkerScript.lib.so"/>
-		<rom label="libQt6Quick.lib.so"/>
-		<rom label="libQt6QuickWidgets.lib.so"/>
-		<rom label="libQt6Sql.lib.so"/>
-		<rom label="libQt6Svg.lib.so"/>
-		<rom label="libQt6WebChannel.lib.so"/>
-		<rom label="libQt6WebChannelQuick.lib.so"/>
-		<rom label="libQt6WebEngineCore.lib.so"/>
-		<rom label="libQt6WebEngineQuick.lib.so"/>
-		<rom label="libQt6WebEngineWidgets.lib.so"/>
-		<rom label="libQt6Widgets.lib.so"/>
-		<rom label="libc.lib.so"/>
-		<rom label="libcrypto.lib.so"/>
-		<rom label="libdrm.lib.so"/>
-		<rom label="libm.lib.so"/>
-		<rom label="libqgenode.lib.so"/>
-		<rom label="libqjpeg.lib.so"/>
-		<rom label="libqsqlite.lib.so"/>
-		<rom label="libqsvg.lib.so"/>
-		<rom label="libqtquick2plugin.lib.so"/>
-		<rom label="libqtwebenginequickplugin.lib.so"/>
-		<rom label="libworkerscriptplugin.lib.so"/>
-		<rom label="mesa.lib.so"/>
-		<rom label="nss3.lib.so"/>
-		<rom label="nssckbi.lib.so"/>
-		<rom label="qt6_component.lib.so"/>
-		<rom label="softokn3.lib.so"/>
-		<rom label="stdcxx.lib.so"/>
-		<rom label="vfs.lib.so"/>
-		<rom label="vfs_capture.lib.so"/>
-		<rom label="vfs_gpu.lib.so"/>
-		<rom label="vfs_jitterentropy.lib.so"/>
-		<rom label="vfs_lwip.lib.so"/>
-		<rom label="vfs_oss.lib.so"/>
-		<rom label="vfs_pipe.lib.so"/>
-		<rom label="vfs_qtwebengine_shm.lib.so"/>
-		<rom label="vfs_xoroshiro.lib.so"/>
-		<rom label="zlib.lib.so"/>
-		<rom label="qt6_declarative_qml.tar"/>
-		<rom label="qt6_dejavusans.tar"/>
-		<rom label="qt6_libqgenode.tar"/>
-		<rom label="qt6_libqsqlite.tar"/>
-		<rom label="qt6_libqsvg.tar"/>
-		<rom label="qt6_webengine_qml.tar"/>
-		<rom label="qt6_webengine_resources.tar"/>
-		<rom label="qt6_webengine_translations.tar"/>
-		<rom label="falkon_theme.tar"/>
-		<rom label="falkon.config"/>
-
-	</content>
-
-</runtime>
+runtime | ram: 2G | caps: 10000 | binary: falkon | config: falkon.config
++ requires
+  + nic
+  + fs config    | writeable: yes
+  + fs downloads | writeable: yes
+  + gui
+  + report shape
+  + report clipboard
+  + rom clipboard
+  + rom mesa_gpu.lib.so
+  + gpu
+  + rtc
+  + record
+  + play
+  + capture
++ content
+  + rom falkon
+  + rom egl.lib.so
+  + rom mesa_gpu-softpipe.lib.so
+  + rom expat.lib.so
+  + rom freebl3.lib.so
+  + rom glapi.lib.so
+  + rom libFalkonPrivate.lib.so
+  + rom libQt6Core.lib.so
+  + rom libQt6Core5Compat.lib.so
+  + rom libQt6Gui.lib.so
+  + rom libQt6Network.lib.so
+  + rom libQt6OpenGL.lib.so
+  + rom libQt6PrintSupport.lib.so
+  + rom libQt6Qml.lib.so
+  + rom libQt6QmlMeta.lib.so
+  + rom libQt6QmlModels.lib.so
+  + rom libQt6QmlWorkerScript.lib.so
+  + rom libQt6Quick.lib.so
+  + rom libQt6QuickWidgets.lib.so
+  + rom libQt6Sql.lib.so
+  + rom libQt6Svg.lib.so
+  + rom libQt6WebChannel.lib.so
+  + rom libQt6WebChannelQuick.lib.so
+  + rom libQt6WebEngineCore.lib.so
+  + rom libQt6WebEngineQuick.lib.so
+  + rom libQt6WebEngineWidgets.lib.so
+  + rom libQt6Widgets.lib.so
+  + rom libc.lib.so
+  + rom libcrypto.lib.so
+  + rom libdrm.lib.so
+  + rom libm.lib.so
+  + rom libqgenode.lib.so
+  + rom libqjpeg.lib.so
+  + rom libqsqlite.lib.so
+  + rom libqsvg.lib.so
+  + rom libqtquick2plugin.lib.so
+  + rom libqtwebenginequickplugin.lib.so
+  + rom libworkerscriptplugin.lib.so
+  + rom mesa.lib.so
+  + rom nss3.lib.so
+  + rom nssckbi.lib.so
+  + rom qt6_component.lib.so
+  + rom softokn3.lib.so
+  + rom stdcxx.lib.so
+  + rom vfs.lib.so
+  + rom vfs_capture.lib.so
+  + rom vfs_gpu.lib.so
+  + rom vfs_jitterentropy.lib.so
+  + rom vfs_lwip.lib.so
+  + rom vfs_oss.lib.so
+  + rom vfs_pipe.lib.so
+  + rom vfs_qtwebengine_shm.lib.so
+  + rom vfs_xoroshiro.lib.so
+  + rom zlib.lib.so
+  + rom qt6_declarative_qml.tar
+  + rom qt6_dejavusans.tar
+  + rom qt6_libqgenode.tar
+  + rom qt6_libqsqlite.tar
+  + rom qt6_libqsvg.tar
+  + rom qt6_webengine_qml.tar
+  + rom qt6_webengine_resources.tar
+  + rom qt6_webengine_translations.tar
+  + rom falkon_theme.tar
+  + rom falkon.config
+-
